@@ -70,4 +70,6 @@ settings.dat
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+*.manifest
+*.res
 $RECYCLE.BIN/

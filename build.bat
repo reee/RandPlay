@@ -1,9 +1,10 @@
 @echo off
 echo Building RandPlay...
 
-:: Compile resource file
-echo Compiling resource file...
+:: Compile resource files
+echo Compiling resource files...
 rc /fo RandPlay.res RandPlay.rc
+rc /fo lang_en.res lang_en.rc
 if %ERRORLEVEL% neq 0 (
     echo Failed to compile resource file.
     echo This might be because the RC compiler is not in your PATH.
@@ -14,7 +15,7 @@ if %ERRORLEVEL% neq 0 (
 
 :: Compile and link
 echo Compiling and linking...
-cl /EHsc /std:c++17 RandPlay.cpp RandPlay.res /link /SUBSYSTEM:WINDOWS user32.lib gdi32.lib comctl32.lib shell32.lib ole32.lib
+cl /EHsc /std:c++17 RandPlay.cpp RandPlay.res lang_en.res /link /SUBSYSTEM:WINDOWS user32.lib gdi32.lib comctl32.lib shell32.lib ole32.lib
 if %ERRORLEVEL% neq 0 (
     echo Failed to compile and link.
     echo.

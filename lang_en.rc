@@ -1,0 +1,61 @@
+#include <windows.h>
+#include "resource.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+STRINGTABLE
+BEGIN
+    // Window and dialog titles
+    IDS_APP_TITLE             "RandPlay - Random File Player"
+    IDS_SETTINGS_TITLE        "Settings"
+    
+    // Button texts
+    IDS_BUILD_INDEX           "Build Index"
+    IDS_OPEN_RANDOM           "Open Random File"
+    IDS_BROWSE                "Browse..."
+    IDS_OK                    "OK"
+    IDS_CANCEL                "Cancel"
+    
+    // ListView column headers
+    IDS_COL_FILENAME          "File Name"
+    IDS_COL_FOLDERPATH        "Folder Path"
+    
+    // Static text
+    IDS_NO_FOLDER             "No folder selected"
+    IDS_CURRENT_FOLDER        "Current Folder: "
+    IDS_INDEXED_FILES         "  |  Indexed Files: "
+    
+    // File types
+    IDS_VIDEO_FILES           "Video Files"
+    IDS_IMAGE_FILES           "Image Files"
+    IDS_CUSTOM_EXTENSION      "Custom Extension"
+    
+    // Dialog labels
+    IDS_DIRECTORY             "Directory:"
+    IDS_FILE_TYPE             "File Type:"
+    IDS_CUSTOM_EXT            "Custom Ext:"
+    
+    // Browse dialog
+    IDS_SELECT_DIRECTORY      "Select a directory"
+    
+    // Message box titles
+    IDS_ERROR                 "Error"
+    IDS_SUCCESS               "Success"
+    IDS_CONFIRM               "Confirm Rebuild"
+    
+    // Message box texts
+    IDS_NO_DIRECTORY          "Please select a directory first. Go to File > Settings to select a directory."
+    IDS_INDEX_EXISTS          "An index file already exists. Do you want to rebuild it?"
+    IDS_NO_EXTENSION          "Please select a valid file type or enter a custom extension in the settings."
+    IDS_ERROR_SCANNING        "Error scanning directory."
+    IDS_FAILED_CREATE_INDEX   "Failed to create index file."
+    IDS_INDEX_SUCCESS         "Index built successfully. Found %d files."
+    IDS_INDEX_NOT_FOUND       "Index file not found. Please build the index first."
+    IDS_FAILED_OPEN_INDEX     "Failed to open index file."
+    IDS_FAILED_READ_INDEX     "Failed to read from index file."
+    IDS_NO_FILES_FOUND        "No files found in the index."
+    IDS_ERROR_READING_INDEX   "Error reading from index file."
+    IDS_FILE_NOT_EXISTS       "The selected file no longer exists."
+    IDS_FOLDER_NOT_EXISTS     "The selected folder no longer exists."
+    IDS_NO_FILE_OPEN          "No file is currently open."
+END

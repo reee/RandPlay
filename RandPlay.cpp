@@ -116,6 +116,18 @@ std::wstring GetSelectedExtension();
 HFONT CreateUIFont();
 int ScaleDPI(int value);
 
+// Helper function to load string resources
+std::wstring LoadStringResource(UINT stringID)
+{
+    wchar_t buffer[1024];
+    int len = LoadString(GetModuleHandle(NULL), stringID, buffer, sizeof(buffer)/sizeof(wchar_t));
+    if (len > 0)
+    {
+        return std::wstring(buffer, len);
+    }
+    return L"";
+}
+
 // Enable visual styles and DPI awareness
 HRESULT EnableVisualStyles()
 {
@@ -169,14 +181,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     RegisterClass(&wc);
 
     // Scale window size based on DPI
-    int windowWidth = ScaleDPI(600);
-    int windowHeight = ScaleDPI(400);
+    int windowWidth = ScaleDPI(300);
+    int windowHeight = ScaleDPI(300);
     
     // Create the window with a more modern style
     g_hwndMain = CreateWindowEx(
         WS_EX_OVERLAPPEDWINDOW,     // Extended window style for better borders
         CLASS_NAME,                 // Window class
-        L"RandPlay - Random File Player",  // Window title
+        LoadStringResource(IDS_APP_TITLE).c_str(),  // Window title from resources
         WS_OVERLAPPEDWINDOW,        // Window style
         CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight,  // Size and position scaled for DPI
         NULL,       // Parent window    
@@ -432,7 +444,7 @@ void InitializeControls(HWND hwnd)
     
     // Create the "Build Index" button
     HWND hwndBuildIndex = CreateWindowEx(
-        0, L"BUTTON", L"Build Index",
+        0, L"BUTTON", LoadStringResource(IDS_BUILD_INDEX).c_str(),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         margin, margin, buttonWidth, buttonHeight,
         hwnd, (HMENU)IDC_BUILD_INDEX_BUTTON, GetModuleHandle(NULL), NULL);
@@ -440,7 +452,7 @@ void InitializeControls(HWND hwnd)
     
     // Create the "Open Random File" button - positioned closer to the first button
     HWND hwndOpenRandom = CreateWindowEx(
-        0, L"BUTTON", L"Open Random File",
+        0, L"BUTTON", LoadStringResource(IDS_OPEN_RANDOM).c_str(),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         margin + buttonWidth + buttonSpacing, margin, buttonWidth, buttonHeight,
         hwnd, (HMENU)IDC_OPEN_RANDOM_BUTTON, GetModuleHandle(NULL), NULL);
@@ -465,19 +477,19 @@ void InitializeControls(HWND hwnd)
     
     // File name column
     lvc.iSubItem = 0;
-    lvc.cx = ScaleDPI(200);
-    lvc.pszText = L"File Name";
+    lvc.cx = ScaleDPI(140);
+    lvc.pszText = const_cast<LPWSTR>(LoadStringResource(IDS_COL_FILENAME).c_str());
     ListView_InsertColumn(g_hwndRecentFilesList, 0, &lvc);
     
     // Folder path column
     lvc.iSubItem = 1;
-    lvc.cx = width - margin * 2 - ScaleDPI(220); // Remaining width
-    lvc.pszText = L"Folder Path";
+    lvc.cx = width - margin * 2 - ScaleDPI(140); // Remaining width
+    lvc.pszText = const_cast<LPWSTR>(LoadStringResource(IDS_COL_FOLDERPATH).c_str());
     ListView_InsertColumn(g_hwndRecentFilesList, 1, &lvc);
     
     // Create the folder info static control at the bottom
     g_hwndFolderInfoStatic = CreateWindowEx(
-        0, L"STATIC", L"No folder selected",
+        0, L"STATIC", LoadStringResource(IDS_NO_FOLDER).c_str(),
         WS_CHILD | WS_VISIBLE | SS_LEFT,
         margin, height - margin - bottomInfoHeight, width - margin * 2, bottomInfoHeight,
         hwnd, (HMENU)IDC_FOLDER_INFO_STATIC, GetModuleHandle(NULL), NULL);
@@ -761,8 +773,8 @@ void UpdateFolderInfo()
         }
     }
     
-    std::wstring info = L"Current Folder: " + g_currentDirectory;
-    info += L"  |  Indexed Files: " + std::to_wstring(g_indexedFileCount);
+    std::wstring info = LoadStringResource(IDS_CURRENT_FOLDER) + g_currentDirectory;
+    info += LoadStringResource(IDS_INDEXED_FILES) + std::to_wstring(g_indexedFileCount);
     
     SetWindowText(g_hwndFolderInfoStatic, info.c_str());
 }
@@ -772,7 +784,7 @@ void BrowseForFolder(HWND hwndParent)
 {
     BROWSEINFO bi = {};
     bi.hwndOwner = hwndParent;
-    bi.lpszTitle = L"Select a directory";
+    bi.lpszTitle = LoadStringResource(IDS_SELECT_DIRECTORY).c_str();
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
 
     LPITEMIDLIST pidl = SHBrowseForFolder(&bi);
@@ -918,7 +930,7 @@ void OpenFileFromList(int index)
     // Check if the file exists
     if (!std::filesystem::exists(filePath))
     {
-        MessageBox(g_hwndMain, L"The selected file no longer exists.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_FILE_NOT_EXISTS).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
@@ -955,7 +967,7 @@ void OpenFolderFromList(int index)
     // Check if the folder exists
     if (!std::filesystem::exists(folderPath))
     {
-        MessageBox(g_hwndMain, L"The selected folder no longer exists.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_FOLDER_NOT_EXISTS).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
@@ -969,7 +981,7 @@ void BuildIndex()
     // Check if a directory is selected
     if (g_currentDirectory.empty())
     {
-        MessageBox(g_hwndMain, L"Please select a directory first. Go to File > Settings to select a directory.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_NO_DIRECTORY).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
@@ -982,9 +994,9 @@ void BuildIndex()
     {
         // Ask for confirmation before rebuilding
         int result = MessageBox(g_hwndMain, 
-                               L"An index file already exists. Do you want to rebuild it?", 
-                               L"Confirm Rebuild", 
-                               MB_YESNO | MB_ICONQUESTION);
+                                LoadStringResource(IDS_INDEX_EXISTS).c_str(), 
+                                LoadStringResource(IDS_CONFIRM).c_str(), 
+                                MB_YESNO | MB_ICONQUESTION);
         
         if (result != IDYES)
         {
@@ -997,7 +1009,7 @@ void BuildIndex()
     std::wstring extensionFilter = GetSelectedExtension();
     if (extensionFilter.empty())
     {
-        MessageBox(g_hwndMain, L"Please select a valid file type or enter a custom extension in the settings.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_NO_EXTENSION).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
 
@@ -1061,7 +1073,7 @@ void BuildIndex()
     }
     catch (const std::exception& e)
     {
-        MessageBox(g_hwndMain, L"Error scanning directory.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_ERROR_SCANNING).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
 
@@ -1072,7 +1084,7 @@ void BuildIndex()
     
     if (indexFile == NULL)
     {
-        MessageBox(g_hwndMain, L"Failed to create index file.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_FAILED_CREATE_INDEX).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
@@ -1102,8 +1114,9 @@ void BuildIndex()
     
     // Show a success message
     wchar_t successMsg[256];
-    swprintf_s(successMsg, L"Index built successfully. Found %d files.", fileCount);
-    MessageBox(g_hwndMain, successMsg, L"Success", MB_OK | MB_ICONINFORMATION);
+    std::wstring successTemplate = LoadStringResource(IDS_INDEX_SUCCESS);
+    swprintf_s(successMsg, 256, successTemplate.c_str(), fileCount);
+    MessageBox(g_hwndMain, successMsg, LoadStringResource(IDS_SUCCESS).c_str(), MB_OK | MB_ICONINFORMATION);
 }
 
 void OpenRandomFile()
@@ -1115,7 +1128,7 @@ void OpenRandomFile()
     // Check if index file exists
     if (!std::filesystem::exists(indexFilePath))
     {
-        MessageBox(g_hwndMain, L"Index file not found. Please build the index first.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_INDEX_NOT_FOUND).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
 
@@ -1125,7 +1138,7 @@ void OpenRandomFile()
     
     if (indexFile == NULL)
     {
-        MessageBox(g_hwndMain, L"Failed to open index file.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_FAILED_OPEN_INDEX).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
@@ -1133,14 +1146,14 @@ void OpenRandomFile()
     uint32_t numFiles = 0;
     if (fread(&numFiles, sizeof(uint32_t), 1, indexFile) != 1)
     {
-        MessageBox(g_hwndMain, L"Failed to read from index file.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_FAILED_READ_INDEX).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         fclose(indexFile);
         return;
     }
     
     if (numFiles == 0)
     {
-        MessageBox(g_hwndMain, L"No files found in the index.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_NO_FILES_FOUND).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         fclose(indexFile);
         return;
     }
@@ -1155,7 +1168,7 @@ void OpenRandomFile()
         uint32_t length = 0;
         if (fread(&length, sizeof(uint32_t), 1, indexFile) != 1)
         {
-            MessageBox(g_hwndMain, L"Error reading from index file.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBox(g_hwndMain, LoadStringResource(IDS_ERROR_READING_INDEX).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
             fclose(indexFile);
             return;
         }
@@ -1164,7 +1177,7 @@ void OpenRandomFile()
         std::vector<wchar_t> buffer(length + 1, 0); // +1 for null terminator
         if (fread(buffer.data(), sizeof(wchar_t), length, indexFile) != length)
         {
-            MessageBox(g_hwndMain, L"Error reading from index file.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBox(g_hwndMain, LoadStringResource(IDS_ERROR_READING_INDEX).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
             fclose(indexFile);
             return;
         }
@@ -1193,7 +1206,7 @@ void OpenContainingFolder()
 {
     if (g_currentFilePath.empty())
     {
-        MessageBox(g_hwndMain, L"No file is currently open.", L"Error", MB_OK | MB_ICONERROR);
+        MessageBox(g_hwndMain, LoadStringResource(IDS_NO_FILE_OPEN).c_str(), LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
     
