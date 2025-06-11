@@ -1,4 +1,5 @@
 # Build results
+[Bb]uild/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -30,6 +31,9 @@ ipch/
 *.cachefile
 *.VC.db
 *.VC.VC.opendb
+
+# Visual Studio Code files
+.vscode/
 
 # Application-specific files
 *.dat

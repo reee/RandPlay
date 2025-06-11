@@ -1,14 +1,17 @@
+#pragma once
+
+// Icon and menu resources
 #define IDI_ICON1 101
 #define IDR_MAINMENU 102
 
-// Menu IDs
+// Menu IDs (keep traditional defines for resource files)
 #define IDM_SETTINGS 201
 #define IDM_EXIT 202
 
 // Dialog IDs
 #define IDD_SETTINGS_DIALOG 301
 
-// Control IDs
+// Control IDs (keep traditional defines for resource files)
 #define IDC_DIRECTORY_EDIT 101
 #define IDC_BROWSE_BUTTON 102
 #define IDC_EXTENSION_COMBO 103
@@ -17,7 +20,6 @@
 #define IDC_OPEN_RANDOM_BUTTON 106
 #define IDC_RECENT_FILES_LIST 107
 #define IDC_FOLDER_INFO_STATIC 110
-
 #define IDC_STATIC -1
 
 // String IDs

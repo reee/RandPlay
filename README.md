@@ -13,6 +13,15 @@ RandPlay is a Windows application that allows you to randomly open files of spec
 ## How to Use
 
 1. **Build the application**:
+     **Method 1: Using CMake (Recommended)**
+   - Run `build_cmake_auto.bat` to compile the application (auto-detects CMake)
+   - Or run `cmake_build.bat` to compile the application
+   - For debug build: `build_cmake_auto.bat debug` or `cmake_build.bat debug`
+   - For release build: `build_cmake_auto.bat release` or `cmake_build.bat release` (default)
+   - Quick build and run: `quick.bat`
+   - Requires CMake and either Visual Studio or MinGW
+   
+   **Method 2: Using traditional build**
    - Run `build.bat` to compile the application
    - Requires Visual Studio with C++ development tools installed
 
@@ -35,7 +44,37 @@ RandPlay is a Windows application that allows you to randomly open files of spec
 ## Requirements
 
 - Windows operating system
-- Visual Studio (2017 or newer) with C++ development tools
+- **For CMake build**: CMake (3.16+) and either Visual Studio (2017+) with C++ development tools or MinGW
+- **For traditional build**: Visual Studio (2017 or newer) with C++ development tools
+
+## Project Structure
+
+This project follows a modern modular architecture:
+
+```
+RandPlay/
+├── src/                              # Source code modules
+│   ├── main.cpp                      # Main application entry
+│   ├── core/                         # Core business logic
+│   │   ├── Utils.cpp/h               # Utility functions
+│   │   ├── Settings.cpp/h            # Settings management
+│   │   └── FileIndexer.cpp/h         # File indexing
+│   ├── ui/                           # User interface
+│   │   └── UIHelpers.cpp/h           # UI helper functions
+│   └── constants/                    # Constants definitions
+│       ├── AppConstants.h            # Application constants
+│       └── ResourceIds.h             # Resource IDs
+├── resources/                        # Resource files
+│   ├── icons/RandPlay.ico
+│   ├── strings/lang_en.rc
+│   └── RandPlay.rc
+├── include/pch.h                     # Precompiled header
+├── scripts/                          # Build and utility scripts
+│   ├── build/                        # Build scripts
+│   ├── dev/                          # Development tools
+│   └── dist/                         # Distribution scripts
+└── docs/                             # Documentation
+```
 
 ---
 
@@ -53,7 +92,33 @@ RandPlay 是一个 Windows 应用程序，允许您从选定目录中随机打�
 
 ## 使用方法
 
-1. **构建应用程序**：
+1. **构建应用程序**：## Build Scripts
+
+Located in `scripts/` directory:
+
+### Build Scripts (`scripts/build/`)
+- `build_cmake_auto.bat` - Auto-detecting CMake build (recommended)
+- `cmake_build.bat` - CMake build with specific paths
+- `clean.bat` - Clean build files
+- `build.bat` - Traditional build script (legacy)
+
+### Development Tools (`scripts/dev/`)
+- `quick.bat` - Quick build and run
+- `run.bat` - Run the application
+- `info.bat` - Show project information
+- `open_vs.bat` - Open in Visual Studio
+
+### Distribution (`scripts/dist/`)
+- `install.bat` - Install application to desktop
+
+## Documentation
+
+- `CMAKE_CONFIG.md` - Detailed CMake configuration
+- `MIGRATION_SUMMARY.md` - CMake migration summary
+- `PROJECT_RESTRUCTURE_PLAN.md` - Restructuring plan
+- `docs/REFACTORING_COMPLETE.md` - Refactoring completion report
+   
+   **方法 2：使用传统构建**
    - 运行 `build.bat` 编译应用程序
    - 需要安装有 C++ 开发工具的 Visual Studio
 
@@ -76,4 +141,12 @@ RandPlay 是一个 Windows 应用程序，允许您从选定目录中随机打�
 ## 系统要求
 
 - Windows 操作系统
-- Visual Studio（2017 或更新版本）与 C++ 开发工具
+- **CMake 构建**：CMake (3.16+) 和 Visual Studio（2017+）与 C++ 开发工具或 MinGW
+- **传统构建**：Visual Studio（2017 或更新版本）与 C++ 开发工具
+
+## 构建文件
+
+- `CMakeLists.txt` - CMake 配置文件
+- `cmake_build.bat` - CMake 构建脚本，支持调试/发布选项
+- `clean.bat` - 清理构建文件脚本
+- `build.bat` - 传统构建脚本（遗留）
