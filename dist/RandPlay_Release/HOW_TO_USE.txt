@@ -1,0 +1,24 @@
+RandPlay - Random File Player
+=============================
+
+This package contains two language versions:
+
+ENGLISH VERSION:
+  File: English\RandPlay_EN.exe
+  Description: Full English interface
+
+CHINESE VERSION:
+  File: Chinese\RandPlay_ZH_CN.exe  
+  Description: Simplified Chinese interface
+
+USAGE:
+  1. Choose your preferred language version
+  2. Run the corresponding .exe file
+  3. Go to File > Settings to configure directories
+  4. Build index and enjoy random file playback
+
+REQUIREMENTS:
+  - Windows 10 or later
+  - Administrative rights (for some directories)
+
+For more information, see README.md

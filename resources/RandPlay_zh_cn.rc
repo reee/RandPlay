@@ -1,0 +1,63 @@
+#include <windows.h>
+#include "../src/constants/ResourceIds.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "RandPlay"
+            VALUE "FileDescription", "Random File Player"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "RandPlay.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2025"
+            VALUE "OriginalFilename", "RandPlay.exe"
+            VALUE "ProductName", "RandPlay"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+IDI_ICON1 ICON "icons/RandPlay.ico"
+
+// Main menu
+IDR_MAINMENU MENU
+BEGIN
+    POPUP "文件(&F)"
+    BEGIN
+        MENUITEM "设置(&S)...",               IDM_SETTINGS
+        MENUITEM SEPARATOR
+        MENUITEM "退出(&X)",                  IDM_EXIT
+    END
+END
+
+// Settings dialog
+IDD_SETTINGS_DIALOG DIALOGEX 0, 0, 320, 180
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "设置"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "目录:",IDC_STATIC,7,10,38,8
+    EDITTEXT        IDC_DIRECTORY_EDIT,50,7,209,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "浏览...",IDC_BROWSE_BUTTON,263,7,50,14
+    LTEXT           "文件类型:",IDC_STATIC,7,30,38,8
+    COMBOBOX        IDC_EXTENSION_COMBO,50,28,100,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "自定义扩展名:",IDC_STATIC,160,30,65,8
+    EDITTEXT        IDC_CUSTOM_EXT_EDIT,230,28,30,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "确定",IDOK,209,159,50,14
+    PUSHBUTTON      "取消",IDCANCEL,263,159,50,14
+END
+
+// Include Chinese strings
+#include "strings/lang_zh_cn.rc"

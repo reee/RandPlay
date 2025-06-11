@@ -1,0 +1,61 @@
+#include <windows.h>
+#include "../../src/constants/ResourceIds.h"
+
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+
+STRINGTABLE
+BEGIN
+    // Window and dialog titles
+    IDS_APP_TITLE             L"RandPlay - 随机文件播放器"
+    IDS_SETTINGS_TITLE        L"设置"
+    
+    // Button texts
+    IDS_BUILD_INDEX           L"建立索引"
+    IDS_OPEN_RANDOM           L"打开随机文件"
+    IDS_BROWSE                L"浏览..."
+    IDS_OK                    L"确定"
+    IDS_CANCEL                L"取消"
+    
+    // ListView column headers
+    IDS_COL_FILENAME          L"文件名"
+    IDS_COL_FOLDERPATH        L"文件夹路径"
+    
+    // Static text
+    IDS_NO_FOLDER             L"未选择文件夹"
+    IDS_CURRENT_FOLDER        L"当前文件夹: "
+    IDS_INDEXED_FILES         L"  |  已索引文件: "
+    
+    // File types
+    IDS_VIDEO_FILES           L"视频文件"
+    IDS_IMAGE_FILES           L"图像文件"
+    IDS_CUSTOM_EXTENSION      L"自定义扩展名"
+    
+    // Dialog labels
+    IDS_DIRECTORY             L"目录:"
+    IDS_FILE_TYPE             L"文件类型:"
+    IDS_CUSTOM_EXT            L"自定义扩展名:"
+    
+    // Browse dialog
+    IDS_SELECT_DIRECTORY      L"选择目录"
+    
+    // Message box titles
+    IDS_ERROR                 L"错误"
+    IDS_SUCCESS               L"成功"
+    IDS_CONFIRM               L"确认重建"
+    
+    // Message box texts
+    IDS_NO_DIRECTORY          L"请先选择一个目录。转到 文件 > 设置 以选择目录。"
+    IDS_INDEX_EXISTS          L"索引文件已存在。您要重新生成吗？"
+    IDS_NO_EXTENSION          L"请在设置中选择有效的文件类型或输入自定义扩展名。"
+    IDS_ERROR_SCANNING        L"扫描目录时出错。"
+    IDS_FAILED_CREATE_INDEX   L"创建索引文件失败。"
+    IDS_INDEX_SUCCESS         L"索引建立成功。找到 %d 个文件。"
+    IDS_INDEX_NOT_FOUND       L"未找到索引文件。请先建立索引。"
+    IDS_FAILED_OPEN_INDEX     L"打开索引文件失败。"
+    IDS_FAILED_READ_INDEX     L"读取索引文件失败。"
+    IDS_NO_FILES_FOUND        L"索引中未找到文件。"
+    IDS_ERROR_READING_INDEX   L"读取索引文件时出错。"
+    IDS_FILE_NOT_EXISTS       L"所选文件不再存在。"
+    IDS_FOLDER_NOT_EXISTS     L"所选文件夹不再存在。"
+    IDS_NO_FILE_OPEN          L"当前没有打开的文件。"
+END

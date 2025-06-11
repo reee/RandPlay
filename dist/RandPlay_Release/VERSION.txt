@@ -1,0 +1,7 @@
+RandPlay Multi-Language Build 
+Build Date: 周三 2025/06/11 10:51:45.60 
+Configuration: Release 
+ 
+Files: 
+  English\RandPlay_EN.exe - English Version 
+  Chinese\RandPlay_ZH_CN.exe - Chinese Version 

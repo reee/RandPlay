@@ -93,17 +93,21 @@ void UIHelpers::InitializeControls(HWND hwnd) {
 INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static TempSettings tempSettings;
     
-    switch (uMsg) {
-    case WM_INITDIALOG:
+    switch (uMsg) {    case WM_INITDIALOG:
         {
+            // Set dialog title and button texts using string resources
+            SetWindowText(hwnd, Utils::LoadStringResource(IDS_SETTINGS_TITLE).c_str());
+            SetWindowText(GetDlgItem(hwnd, IDC_BROWSE_BUTTON), Utils::LoadStringResource(IDS_BROWSE).c_str());
+            SetWindowText(GetDlgItem(hwnd, IDOK), Utils::LoadStringResource(IDS_OK).c_str());
+            SetWindowText(GetDlgItem(hwnd, IDCANCEL), Utils::LoadStringResource(IDS_CANCEL).c_str());
+            
             // Initialize dialog with current settings
             SetWindowText(GetDlgItem(hwnd, IDC_DIRECTORY_EDIT), g_settingsManager->GetCurrentDirectory().c_str());
-            
-            // Add items to the combo box
+              // Add items to the combo box using string resources
             HWND hwndCombo = GetDlgItem(hwnd, IDC_EXTENSION_COMBO);
-            for (size_t i = 0; i < AppConstants::EXTENSION_TYPES_COUNT; i++) {
-                SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)AppConstants::EXTENSION_TYPES[i]);
-            }
+            SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_VIDEO_FILES).c_str());
+            SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_IMAGE_FILES).c_str());
+            SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_CUSTOM_EXTENSION).c_str());
             
             // Set current selection based on current extension
             int extType = 0; // Default to video files
