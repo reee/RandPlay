@@ -167,10 +167,12 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                 GetWindowText(GetDlgItem(hwnd, IDC_DIRECTORY_EDIT), tempSettings.directory, MAX_PATH);
                 tempSettings.extensionType = ComboBox_GetCurSel(GetDlgItem(hwnd, IDC_EXTENSION_COMBO));
                 GetWindowText(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), tempSettings.customExtension, 32);
-                
-                // Update global settings
+                  // Update global settings
                 g_settingsManager->SetCurrentDirectory(tempSettings.directory);
                 g_settingsManager->SetExtensionType(tempSettings.extensionType, tempSettings.customExtension);
+                
+                // Reload index count since directory or extension may have changed
+                g_fileIndexer->LoadIndexCount();
                 
                 // Update folder info display
                 UpdateFolderInfo();

@@ -98,9 +98,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SetMenu(hwnd, hMenu);
             
             // Set a light gray background color for the window
-            SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetSysColorBrush(COLOR_BTNFACE));
-              // Initialize controls
+            SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetSysColorBrush(COLOR_BTNFACE));            // Initialize controls
             UIHelpers::InitializeControls(hwnd);
+            
+            // Load index count to initialize the file counter
+            g_fileIndexer->LoadIndexCount();
             
             // Update folder info
             UIHelpers::UpdateFolderInfo();

@@ -11,9 +11,11 @@ public:
     
     // Build index from directory and extensions
     bool BuildIndex(const std::wstring& directory, const std::wstring& extensionFilter);
-    
-    // Load index from file
+      // Load index from file
     bool LoadIndex(std::vector<std::wstring>& filePaths);
+    
+    // Load index count only (more efficient than LoadIndex when only count is needed)
+    bool LoadIndexCount();
     
     // Get indexed file count
     int GetIndexedFileCount() const;

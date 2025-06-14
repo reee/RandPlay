@@ -110,6 +110,36 @@ bool FileIndexer::LoadIndex(std::vector<std::wstring>& filePaths) {
     return true;
 }
 
+bool FileIndexer::LoadIndexCount() {
+    std::wstring indexFilePath = GetIndexFilePath();
+    
+    if (!std::filesystem::exists(indexFilePath)) {
+        indexedFileCount = 0;
+        return false;
+    }
+    
+    // Open the binary index file for reading
+    FILE* indexFile = NULL;
+    _wfopen_s(&indexFile, indexFilePath.c_str(), L"rb");
+    
+    if (indexFile == NULL) {
+        indexedFileCount = 0;
+        return false;
+    }
+    
+    // Read only the number of files (first uint32_t in the file)
+    uint32_t numFiles = 0;
+    if (fread(&numFiles, sizeof(uint32_t), 1, indexFile) != 1) {
+        fclose(indexFile);
+        indexedFileCount = 0;
+        return false;
+    }
+    
+    fclose(indexFile);
+    indexedFileCount = static_cast<int>(numFiles);
+    return true;
+}
+
 int FileIndexer::GetIndexedFileCount() const {
     return indexedFileCount;
 }
