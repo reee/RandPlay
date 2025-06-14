@@ -14,9 +14,8 @@ if not defined RANDPLAY_FUNCTIONS_LOADED (
     set "PROJECT_NAME=RandPlay"
     set "PROJECT_VERSION=1.0.0"
     set "DEFAULT_CONFIG=Release"
-    
-    REM 获取项目根目录
-    set "PROJECT_ROOT=%~dp0..\.."
+      REM 获取项目根目录
+    set "PROJECT_ROOT=%~dp0.."
     
     REM 标准化路径
     for %%i in ("%PROJECT_ROOT%") do set "PROJECT_ROOT=%%~fi"

@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 REM 加载公共函数
-call "%~dp0..\common\functions.bat"
+call "%~dp0functions.bat"
 
 call :print_header "开发构建"
 
