@@ -1,55 +1,95 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM 加载公共函数
-call "%~dp0functions.bat"
+REM ============================================================
+REM RandPlay Release Build Script
+REM ============================================================
 
-call :print_header "发布构建"
+REM Set project paths
+set "SCRIPT_DIR=%~dp0"
+set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+pushd "%SCRIPT_DIR%\.."
+set "PROJECT_ROOT=%CD%"
+popd
 
-call :print_info "准备发布版本构建和打包"
+set "BUILD_DIR=%PROJECT_ROOT%\build"
+set "BIN_DIR=%BUILD_DIR%\bin"
+set "PROJECT_VERSION=1.0.0"
 
-REM 完全清理
-call :print_step "1" "清理构建环境"
-call :safe_rmdir "%BUILD_DIR%"
-call :safe_rmdir "%PROJECT_ROOT%\dist"
-call :ensure_dir "%BUILD_DIR%"
-call :ensure_dir "%PROJECT_ROOT%\dist"
+REM Color codes (Windows 10+)
+set "COLOR_RESET=[0m"
+set "COLOR_CYAN=[96m"
+set "COLOR_GREEN=[92m"
+set "COLOR_RED=[91m"
+set "COLOR_WHITE=[97m"
+set "COLOR_BLUE=[94m"
 
-REM 生成构建文件
-call :print_step "2" "生成构建文件"
+REM Print header
+echo.
+echo %COLOR_CYAN%=============================================================%COLOR_RESET%
+echo %COLOR_CYAN%RandPlay - Release Build Script%COLOR_RESET%
+echo %COLOR_CYAN%=============================================================%COLOR_RESET%
+echo.
+
+echo %COLOR_BLUE%[INFO] Preparing release build and distribution%COLOR_RESET%
+echo.
+
+REM Clean directories
+echo %COLOR_WHITE%[1] Cleaning build directories%COLOR_RESET%
+if exist "%BUILD_DIR%" (
+    echo %COLOR_BLUE%[INFO] Removing directory: %BUILD_DIR%%COLOR_RESET%
+    rmdir /s /q "%BUILD_DIR%" 2>nul
+)
+if exist "%PROJECT_ROOT%\dist" (
+    echo %COLOR_BLUE%[INFO] Removing directory: %PROJECT_ROOT%\dist%COLOR_RESET%
+    rmdir /s /q "%PROJECT_ROOT%\dist" 2>nul
+)
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+if not exist "%PROJECT_ROOT%\dist" mkdir "%PROJECT_ROOT%\dist"
+
+REM Check if cmake is available
+where cmake >nul 2>&1
+if %errorlevel% neq 0 (
+    echo %COLOR_RED%[ERROR] cmake not found. Please ensure it is installed.%COLOR_RESET%
+    pause
+    exit /b 1
+)
+
+REM Generate build files
+echo %COLOR_WHITE%[2] Generating build files%COLOR_RESET%
 cmake -B "%BUILD_DIR%" -A x64
 if %errorlevel% neq 0 (
-    call :print_error "生成构建文件失败"
+    echo %COLOR_RED%[ERROR] Failed to generate build files%COLOR_RESET%
     pause
     exit /b 1
 )
 
-REM 构建Release版本
-call :print_step "3" "构建Release版本"
+REM Build Release version
+echo %COLOR_WHITE%[3] Building Release version%COLOR_RESET%
 cmake --build "%BUILD_DIR%" --config Release
 if %errorlevel% neq 0 (
-    call :print_error "构建失败"
+    echo %COLOR_RED%[ERROR] Build failed%COLOR_RESET%
     pause
     exit /b 1
 )
 
-REM 创建发布包
-call :print_step "4" "创建发布包"
+REM Prepare distribution
+echo %COLOR_WHITE%[4] Preparing distribution package%COLOR_RESET%
 set "RELEASE_DIR=%PROJECT_ROOT%\dist\RandPlay_%PROJECT_VERSION%"
-call :ensure_dir "%RELEASE_DIR%"
+if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
 
-REM 复制可执行文件
+REM Copy executable files
 if exist "%BIN_DIR%\Release\RandPlay_EN.exe" (
     copy "%BIN_DIR%\Release\RandPlay_EN.exe" "%RELEASE_DIR%\" >nul
-    call :print_success "已复制英文版"
+    echo %COLOR_GREEN%[OK] Copied English version%COLOR_RESET%
 )
 
 if exist "%BIN_DIR%\Release\RandPlay_ZH_CN.exe" (
     copy "%BIN_DIR%\Release\RandPlay_ZH_CN.exe" "%RELEASE_DIR%\" >nul
-    call :print_success "已复制中文版"
+    echo %COLOR_GREEN%[OK] Copied Chinese version%COLOR_RESET%
 )
 
-REM 复制资源文件
+REM Copy resource files
 if exist "%BIN_DIR%\Release\RandPlay.ico" (
     copy "%BIN_DIR%\Release\RandPlay.ico" "%RELEASE_DIR%\" >nul
 )
@@ -62,9 +102,13 @@ if exist "%PROJECT_ROOT%\LICENSE" (
     copy "%PROJECT_ROOT%\LICENSE" "%RELEASE_DIR%\" >nul
 )
 
-REM 创建版本信息文件
-call :print_info "生成版本信息文件"
-call :get_timestamp
+REM Generate version info file
+echo %COLOR_BLUE%[INFO] Generating version info file%COLOR_RESET%
+
+REM Get current timestamp
+for /f "tokens=2 delims==" %%i in ('wmic OS Get localdatetime /value') do set "dt=%%i"
+set "timestamp=%dt:~0,4%-%dt:~4,2%-%dt:~6,2% %dt:~8,2%:%dt:~10,2%:%dt:~12,2%"
+
 (
 echo RandPlay %PROJECT_VERSION% - Release Build
 echo ==========================================
@@ -88,8 +132,8 @@ echo.
 echo For more information, visit: https://github.com/yourname/RandPlay
 ) > "%RELEASE_DIR%\VERSION.txt"
 
-REM 创建使用说明文件
-call :print_info "生成使用说明文件"
+REM Generate usage instructions file
+echo %COLOR_BLUE%[INFO] Generating usage instructions file%COLOR_RESET%
 (
 echo RandPlay - Random File Player
 echo =============================
@@ -135,26 +179,27 @@ echo.
 echo Enjoy using RandPlay!
 ) > "%RELEASE_DIR%\HOW_TO_USE.txt"
 
-call :print_step "5" "完成"
+echo %COLOR_WHITE%[5] Complete%COLOR_RESET%
 
-REM 显示结果
+REM Display summary
 echo.
-call :print_success "发布构建完成"
-call :print_info "发布目录: %RELEASE_DIR%"
+echo %COLOR_GREEN%[OK] Release package created successfully%COLOR_RESET%
+echo %COLOR_BLUE%[INFO] Release directory: %RELEASE_DIR%%COLOR_RESET%
 
 if exist "%RELEASE_DIR%\RandPlay_EN.exe" (
     for %%f in ("%RELEASE_DIR%\RandPlay_EN.exe") do (
-        call :print_info "RandPlay_EN.exe - %%~zf 字节"
+        echo %COLOR_BLUE%[INFO] RandPlay_EN.exe - %%~zf bytes%COLOR_RESET%
     )
 )
 
 if exist "%RELEASE_DIR%\RandPlay_ZH_CN.exe" (
     for %%f in ("%RELEASE_DIR%\RandPlay_ZH_CN.exe") do (
-        call :print_info "RandPlay_ZH_CN.exe - %%~zf 字节"
+        echo %COLOR_BLUE%[INFO] RandPlay_ZH_CN.exe - %%~zf bytes%COLOR_RESET%
     )
 )
 
-call :print_info "打开发布目录? (Y/N)"
+echo.
+echo %COLOR_BLUE%[INFO] Open release directory? (Y/N)%COLOR_RESET%
 set /p open_dir=">"
 if /i "%open_dir%"=="y" (
     start "" "%RELEASE_DIR%"
