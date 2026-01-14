@@ -62,4 +62,10 @@ BEGIN
     // Context menu items
     IDS_MENU_OPEN_FILE        L"Open File"
     IDS_MENU_OPEN_FOLDER      L"Open Folder"
+
+    // Language settings
+    IDS_LANGUAGE              L"Language"
+    IDS_LANGUAGE_AUTO         L"Auto Detect"
+    IDS_LANGUAGE_EN           L"English"
+    IDS_LANGUAGE_ZH           L"Chinese"
 END

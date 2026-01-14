@@ -4,6 +4,7 @@
 #include "../core/Utils.h"
 #include "../core/Settings.h"
 #include "../core/FileIndexer.h"
+#include "../core/LanguageManager.h"
 #include <random>
 #include <filesystem>
 
@@ -12,6 +13,7 @@ struct TempSettings {
     wchar_t directory[MAX_PATH];
     int extensionType;
     wchar_t customExtension[32];
+    int language;
 };
 
 void UIHelpers::InitializeControls(HWND hwnd) {
@@ -96,12 +98,34 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
     
     switch (uMsg) {    case WM_INITDIALOG:
         {
+            // Create the same font as main window for consistency
+            HFONT hFont = Utils::CreateUIFont();
+
+            // Set font for all controls in the dialog
+            SendMessage(GetDlgItem(hwnd, IDC_DIRECTORY_EDIT), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_BROWSE_BUTTON), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_EXTENSION_COMBO), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_LANGUAGE_COMBO), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDOK), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDCANCEL), WM_SETFONT, (WPARAM)hFont, TRUE);
+
+            // Set font for all static text controls
+            EnumChildWindows(hwnd, [](HWND hwndChild, LPARAM lParam) -> BOOL {
+                wchar_t className[256];
+                GetClassName(hwndChild, className, 256);
+                if (wcscmp(className, L"STATIC") == 0) {
+                    SendMessage(hwndChild, WM_SETFONT, (WPARAM)lParam, TRUE);
+                }
+                return TRUE;
+            }, (LPARAM)hFont);
+
             // Set dialog title and button texts using string resources
             SetWindowText(hwnd, Utils::LoadStringResource(IDS_SETTINGS_TITLE).c_str());
             SetWindowText(GetDlgItem(hwnd, IDC_BROWSE_BUTTON), Utils::LoadStringResource(IDS_BROWSE).c_str());
             SetWindowText(GetDlgItem(hwnd, IDOK), Utils::LoadStringResource(IDS_OK).c_str());
             SetWindowText(GetDlgItem(hwnd, IDCANCEL), Utils::LoadStringResource(IDS_CANCEL).c_str());
-            
+
             // Initialize dialog with current settings
             SetWindowText(GetDlgItem(hwnd, IDC_DIRECTORY_EDIT), g_settingsManager->GetCurrentDirectory().c_str());
               // Add items to the combo box using string resources
@@ -109,7 +133,7 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
             SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_VIDEO_FILES).c_str());
             SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_IMAGE_FILES).c_str());
             SendMessage(hwndCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_CUSTOM_EXTENSION).c_str());
-            
+
             // Set current selection based on current extension
             int extType = 0; // Default to video files
             const std::wstring& currentExt = g_settingsManager->GetCurrentExtension();
@@ -129,19 +153,31 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                     SetWindowText(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), currentExt.c_str());
                 }
             }
-            
+
             SendMessage(hwndCombo, CB_SETCURSEL, extType, 0);
             EnableWindow(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), extType == 2);
-            
+
+            // Initialize language combo box
+            HWND hwndLangCombo = GetDlgItem(hwnd, IDC_LANGUAGE_COMBO);
+            SendMessage(hwndLangCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_LANGUAGE_AUTO).c_str());
+            SendMessage(hwndLangCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_LANGUAGE_EN).c_str());
+            SendMessage(hwndLangCombo, CB_ADDSTRING, 0, (LPARAM)Utils::LoadStringResource(IDS_LANGUAGE_ZH).c_str());
+
+            // Set current language selection (convert from settings: -1->0, 0->1, 1->2)
+            int currentLang = g_settingsManager->GetLanguage();
+            int langIndex = currentLang + 1; // Map -1,0,1 to 0,1,2
+            SendMessage(hwndLangCombo, CB_SETCURSEL, langIndex, 0);
+
             // Save temporary settings
             wcscpy_s(tempSettings.directory, g_settingsManager->GetCurrentDirectory().c_str());
             tempSettings.extensionType = extType;
+            tempSettings.language = currentLang;
             if (extType == 2 && !currentExt.empty()) {
                 wcscpy_s(tempSettings.customExtension, currentExt.c_str());
             } else {
                 wcscpy_s(tempSettings.customExtension, L".txt");
             }
-            
+
             return TRUE;
         }
         
@@ -168,16 +204,37 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                 GetWindowText(GetDlgItem(hwnd, IDC_DIRECTORY_EDIT), tempSettings.directory, MAX_PATH);
                 tempSettings.extensionType = ComboBox_GetCurSel(GetDlgItem(hwnd, IDC_EXTENSION_COMBO));
                 GetWindowText(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), tempSettings.customExtension, 32);
+
+                // Get language selection (convert back: 0,1,2 to -1,0,1)
+                int langIndex = ComboBox_GetCurSel(GetDlgItem(hwnd, IDC_LANGUAGE_COMBO));
+                tempSettings.language = langIndex - 1;
+
                   // Update global settings
                 g_settingsManager->SetCurrentDirectory(tempSettings.directory);
                 g_settingsManager->SetExtensionType(tempSettings.extensionType, tempSettings.customExtension);
-                
+                g_settingsManager->SetLanguageAndSave(tempSettings.language);
+
                 // Reload index count since directory or extension may have changed
                 g_fileIndexer->LoadIndexCount();
-                
+
                 // Update folder info display
                 UpdateFolderInfo();
-                
+
+                // Apply language change if it changed
+                int oldLang = g_settingsManager->GetLanguage();
+                if (oldLang != tempSettings.language) {
+                    // Language preference changed, reload language
+                    int targetLang = tempSettings.language;
+                    if (targetLang == AppConstants::Language::AUTO_DETECT) {
+                        targetLang = LanguageManager::DetectSystemLanguage();
+                    }
+
+                    if (LanguageManager::LoadLanguage(targetLang)) {
+                        // Reload all UI text with new language
+                        ReloadAllUIText();
+                    }
+                }
+
                 EndDialog(hwnd, IDOK);
                 return TRUE;
             }
@@ -193,6 +250,19 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
 }
 
 void UIHelpers::ShowSettingsDialog() {
+    // Try to load dialog from resource DLL first, then from EXE
+    HWND hwndDialog = NULL;
+    HMODULE hResourceDLL = LanguageManager::GetResourceDLL();
+
+    if (hResourceDLL) {
+        // Try loading from resource DLL
+        INT_PTR result = DialogBox(hResourceDLL, MAKEINTRESOURCE(IDD_SETTINGS_DIALOG), g_hwndMain, SettingsDialogProc);
+        if (result != -1 || GetLastError() != ERROR_RESOURCE_NAME_NOT_FOUND) {
+            return; // Successfully loaded or got a real error (not "not found")
+        }
+    }
+
+    // Fallback to EXE resources
     DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS_DIALOG), g_hwndMain, SettingsDialogProc);
 }
 
@@ -446,4 +516,69 @@ void UIHelpers::OpenRandomFile() {
 
     // Open the file with the default application
     ShellExecute(NULL, L"open", g_currentFilePath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
+
+void UIHelpers::UpdateListViewColumns() {
+    if (!g_hwndRecentFilesList)
+        return;
+
+    // Get current column widths
+    RECT rcClient;
+    GetClientRect(g_hwndRecentFilesList, &rcClient);
+    int width = rcClient.right - rcClient.left;
+    int margin = Utils::ScaleDPI(10);
+
+    // Delete existing columns
+    while (ListView_DeleteColumn(g_hwndRecentFilesList, 0));
+
+    // Re-add columns with new language strings
+    LVCOLUMN lvc = {};
+    lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+    lvc.fmt = LVCFMT_LEFT;
+
+    // File name column
+    lvc.iSubItem = 0;
+    lvc.cx = Utils::ScaleDPI(140);
+    lvc.pszText = const_cast<LPWSTR>(Utils::LoadStringResource(IDS_COL_FILENAME).c_str());
+    ListView_InsertColumn(g_hwndRecentFilesList, 0, &lvc);
+
+    // Folder path column
+    lvc.iSubItem = 1;
+    lvc.cx = width - margin * 2 - Utils::ScaleDPI(140);
+    lvc.pszText = const_cast<LPWSTR>(Utils::LoadStringResource(IDS_COL_FOLDERPATH).c_str());
+    ListView_InsertColumn(g_hwndRecentFilesList, 1, &lvc);
+}
+
+void UIHelpers::ReloadAllUIText() {
+    if (!g_hwndMain)
+        return;
+
+    // Reload menu - try resource DLL first, then EXE
+    HMENU hMenu = NULL;
+    HMODULE hResourceDLL = LanguageManager::GetResourceDLL();
+
+    if (hResourceDLL) {
+        hMenu = LoadMenu(hResourceDLL, MAKEINTRESOURCE(IDR_MAINMENU));
+    }
+
+    if (!hMenu) {
+        hMenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MAINMENU));
+    }
+
+    if (hMenu) {
+        SetMenu(g_hwndMain, hMenu);
+    }
+
+    // Update window title
+    SetWindowText(g_hwndMain, Utils::LoadStringResource(IDS_APP_TITLE).c_str());
+
+    // Update folder info text
+    UpdateFolderInfo();
+
+    // Update ListView column headers
+    UpdateListViewColumns();
+
+    // Force redraw of the main window
+    InvalidateRect(g_hwndMain, NULL, TRUE);
+    UpdateWindow(g_hwndMain);
 }

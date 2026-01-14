@@ -21,4 +21,11 @@ namespace AppConstants {
     const size_t VIDEO_EXTENSIONS_COUNT = sizeof(VIDEO_EXTENSIONS) / sizeof(VIDEO_EXTENSIONS[0]);
     const size_t IMAGE_EXTENSIONS_COUNT = sizeof(IMAGE_EXTENSIONS) / sizeof(IMAGE_EXTENSIONS[0]);
     const size_t EXTENSION_TYPES_COUNT = sizeof(EXTENSION_TYPES) / sizeof(EXTENSION_TYPES[0]);
+
+    // Language settings
+    namespace Language {
+        constexpr int AUTO_DETECT = -1;
+        constexpr int ENGLISH = 0;
+        constexpr int CHINESE = 1;
+    }
 }

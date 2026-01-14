@@ -25,6 +25,10 @@ public:
     // Application operations
     static void BuildIndex();
     static void OpenRandomFile();
+
+    // Language management
+    static void ReloadAllUIText();
+    static void UpdateListViewColumns();
 };
 
 // External global variables (defined in main.cpp)

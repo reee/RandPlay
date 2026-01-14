@@ -4,6 +4,7 @@
 #include "core/Utils.h"
 #include "core/Settings.h"
 #include "core/FileIndexer.h"
+#include "core/LanguageManager.h"
 #include "ui/UIHelpers.h"
 
 // Global variables
@@ -55,6 +56,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Initialize global managers
     g_settingsManager = new SettingsManager();
+
+    // Initialize language system (must be after settings, before UI)
+    LanguageManager::Initialize();
+
     g_fileIndexer = new FileIndexer();
 
     // Register the window class with improved appearance
@@ -112,20 +117,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
         {
-            // Create menu
-            HMENU hMenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MAINMENU));
-            SetMenu(hwnd, hMenu);
-            
+            // Create menu - try resource DLL first, then EXE
+            HMENU hMenu = NULL;
+            HMODULE hResourceDLL = LanguageManager::GetResourceDLL();
+
+            if (hResourceDLL) {
+                hMenu = LoadMenu(hResourceDLL, MAKEINTRESOURCE(IDR_MAINMENU));
+            }
+
+            if (!hMenu) {
+                hMenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDR_MAINMENU));
+            }
+
+            if (hMenu) {
+                SetMenu(hwnd, hMenu);
+            }
+
             // Set a light gray background color for the window
             SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetSysColorBrush(COLOR_BTNFACE));            // Initialize controls
             UIHelpers::InitializeControls(hwnd);
-            
+
             // Load index count to initialize the file counter
             g_fileIndexer->LoadIndexCount();
-            
+
             // Update folder info
             UIHelpers::UpdateFolderInfo();
-            
+
             // Update recent files list
             UIHelpers::UpdateRecentFilesList();
             return 0;

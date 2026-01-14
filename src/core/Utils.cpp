@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include "LanguageManager.h"
 #include <filesystem>
 #include <sstream>
 
@@ -22,12 +23,7 @@ namespace Utils {
 
     // Helper function to load string resources
     std::wstring LoadStringResource(UINT stringID) {
-        wchar_t buffer[512];
-        int len = LoadString(GetModuleHandle(NULL), stringID, buffer, 512);
-        if (len > 0) {
-            return std::wstring(buffer, len);
-        }
-        return L"";
+        return LanguageManager::LoadStringResource(stringID);
     }
 
     // Enable visual styles and DPI awareness

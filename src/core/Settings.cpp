@@ -15,36 +15,49 @@ SettingsManager::~SettingsManager() {
 
 void SettingsManager::LoadSettings() {
     std::wstring filePath = Utils::GetAppDataPath() + L"\\" + AppConstants::SETTINGS_FILE_NAME;
-    
+
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         // Default settings
         currentDirectory = std::filesystem::current_path().wstring();
         currentExtension = L".mp4;.avi;.mkv;.mov;.wmv";
+        currentLanguage = AppConstants::Language::AUTO_DETECT;
         return;
     }
-    
+
     // Read settings
     Settings settings;
     file.read(reinterpret_cast<char*>(&settings), sizeof(Settings));
     file.close();
-    
+
     // Apply settings
     currentDirectory = settings.directory;
     UpdateExtensionFromType(settings.extensionType, settings.customExtension);
+
+    // Load language (with backward compatibility for old settings files)
+    // Check if we read enough data to include the language field
+    size_t expectedSize = sizeof(Settings);
+    size_t actualSize = file.gcount();
+
+    // Old settings files (without language) will be smaller
+    if (actualSize < expectedSize) {
+        currentLanguage = AppConstants::Language::AUTO_DETECT;
+    } else {
+        currentLanguage = settings.language;
+    }
 }
 
 void SettingsManager::SaveSettings() {
     std::wstring filePath = Utils::GetAppDataPath() + L"\\" + AppConstants::SETTINGS_FILE_NAME;
-    
+
     std::ofstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         return;
     }
-    
+
     Settings settings;
     wcscpy_s(settings.directory, currentDirectory.c_str());
-    
+
     // Determine extension type
     if (currentExtension.find(L".mp4") != std::wstring::npos ||
         currentExtension.find(L".avi") != std::wstring::npos ||
@@ -60,7 +73,10 @@ void SettingsManager::SaveSettings() {
         settings.extensionType = 2; // Custom extension
         wcscpy_s(settings.customExtension, currentExtension.c_str());
     }
-    
+
+    // Save language preference
+    settings.language = currentLanguage;
+
     file.write(reinterpret_cast<const char*>(&settings), sizeof(Settings));
     file.close();
 }
@@ -103,4 +119,9 @@ void SettingsManager::UpdateExtensionFromType(int extensionType, const std::wstr
     else { // Custom extension
         currentExtension = customExtension;
     }
+}
+
+void SettingsManager::SetLanguageAndSave(int lang) {
+    currentLanguage = lang;
+    SaveSettings();
 }

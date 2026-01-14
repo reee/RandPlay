@@ -39,7 +39,7 @@ find_package(PkgConfig QUIET)
 set(COMMON_SOURCES
     # Main source file
     src/main.cpp
-    
+
     # Core modules
     src/core/Utils.cpp
     src/core/Utils.h
@@ -47,15 +47,17 @@ set(COMMON_SOURCES
     src/core/Settings.h
     src/core/FileIndexer.cpp
     src/core/FileIndexer.h
-    
+    src/core/LanguageManager.cpp
+    src/core/LanguageManager.h
+
     # UI modules
     src/ui/UIHelpers.cpp
     src/ui/UIHelpers.h
-    
+
     # Constants
     src/constants/AppConstants.h
     src/constants/ResourceIds.h
-    
+
     # Precompiled header
     include/pch.h
 )
@@ -70,19 +72,39 @@ set(COMMON_INCLUDES
     resources
 )
 
-# English version
-add_executable(RandPlay_EN WIN32
+# Main executable (single executable with fallback English resources)
+add_executable(RandPlay WIN32
     ${COMMON_SOURCES}
-    resources/RandPlay_en.rc
+    resources/RandPlay.rc
     resources/icons/RandPlay.ico
 )
 
-# Chinese version  
-add_executable(RandPlay_ZH_CN WIN32
-    ${COMMON_SOURCES}
-    resources/RandPlay_zh_cn.rc
-    resources/icons/RandPlay.ico
+# English Resource DLL
+add_library(RandPlay_en SHARED
+    src/core/ResourceDLL.cpp
+    resources/RandPlay_en.rc
 )
+set_target_properties(RandPlay_en PROPERTIES
+    SUFFIX ".dll"
+    OUTPUT_NAME "RandPlay_en"
+)
+
+# Chinese Resource DLL
+add_library(RandPlay_zh_cn SHARED
+    src/core/ResourceDLL.cpp
+    resources/RandPlay_zh_cn.rc
+)
+set_target_properties(RandPlay_zh_cn PROPERTIES
+    SUFFIX ".dll"
+    OUTPUT_NAME "RandPlay_zh_cn"
+)
+
+# Chinese resource compiler flags
+if(MSVC)
+    set_target_properties(RandPlay_zh_cn PROPERTIES
+        RESOURCE_FLAGS "/l 0x804 /c 65001"
+    )
+endif()
 
 # Function to configure common properties
 function(configure_randplay_target TARGET_NAME OUTPUT_NAME)
@@ -151,50 +173,72 @@ function(configure_randplay_target TARGET_NAME OUTPUT_NAME)
     )
 endfunction()
 
-# Configure both targets
-configure_randplay_target(RandPlay_EN "RandPlay_EN")
-configure_randplay_target(RandPlay_ZH_CN "RandPlay_ZH_CN")
+# Configure main executable
+configure_randplay_target(RandPlay "RandPlay")
+
+# Configure resource DLLs (simplified configuration)
+function(configure_resource_dll TARGET_NAME)
+    target_include_directories(${TARGET_NAME} PRIVATE ${COMMON_INCLUDES})
+
+    # Link libraries for resource DLL
+    target_link_libraries(${TARGET_NAME} PRIVATE)
+
+    # Set output directory
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
+    )
+endfunction()
+
+configure_resource_dll(RandPlay_en)
+configure_resource_dll(RandPlay_zh_cn)
 
 # Add source groups for better IDE organization
 function(add_source_groups TARGET_NAME)
     source_group("Source Files\\Main" FILES src/main.cpp)
-    source_group("Source Files\\Core" FILES 
+    source_group("Source Files\\Core" FILES
         src/core/Utils.cpp
         src/core/Settings.cpp
         src/core/FileIndexer.cpp
+        src/core/LanguageManager.cpp
     )
-    source_group("Source Files\\UI" FILES 
+    source_group("Source Files\\UI" FILES
         src/ui/UIHelpers.cpp
     )
-    source_group("Header Files\\Core" FILES 
+    source_group("Header Files\\Core" FILES
         src/core/Utils.h
         src/core/Settings.h
         src/core/FileIndexer.h
+        src/core/LanguageManager.h
     )
-    source_group("Header Files\\UI" FILES 
+    source_group("Header Files\\UI" FILES
         src/ui/UIHelpers.h
     )
-    source_group("Header Files\\Constants" FILES 
+    source_group("Header Files\\Constants" FILES
         src/constants/AppConstants.h
         src/constants/ResourceIds.h
     )
     source_group("Header Files\\PCH" FILES include/pch.h)
 endfunction()
 
-# Apply source groups to both targets
-add_source_groups(RandPlay_EN)
-add_source_groups(RandPlay_ZH_CN)
+# Apply source groups to main executable
+add_source_groups(RandPlay)
 
-# Add resource source groups for English version
-source_group("Resource Files" FILES 
-    resources/RandPlay_en.rc 
-    resources/strings/lang_en.rc 
+# Add resource source groups
+source_group("Resource Files" FILES
+    resources/RandPlay.rc
+    resources/RandPlay_en.rc
+    resources/RandPlay_zh_cn.rc
+    resources/strings/lang_en.rc
+    resources/strings/lang_zh_cn.rc
     resources/icons/RandPlay.ico
 )
 
 # Installation rules
-install(TARGETS RandPlay_EN RandPlay_ZH_CN
+install(TARGETS RandPlay RandPlay_en RandPlay_zh_cn
     RUNTIME DESTINATION bin
+    LIBRARY DESTINATION bin
 )
 
 install(FILES resources/icons/RandPlay.ico
