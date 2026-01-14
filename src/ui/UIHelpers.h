@@ -30,6 +30,8 @@ public:
 extern HWND g_hwndMain;
 extern HWND g_hwndRecentFilesList;
 extern HWND g_hwndFolderInfoStatic;
+extern HWND g_hwndBuildIndexButton;
+extern HWND g_hwndOpenRandomButton;
 extern std::wstring g_currentFilePath;
 extern std::vector<std::wstring> g_recentFiles;
 

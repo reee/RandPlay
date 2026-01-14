@@ -22,7 +22,7 @@
 
 ### 4. 字体选择
 使用 `CreateFontW()` 创建支持中文的字体：
-- 字符集参数设为 `GB2312_CHARSET`
+- 字符集参数设为 `DEFAULT_CHARSET`
 - 推荐字体：`Microsoft YaHei UI`（微软雅黑）
 - 质量参数使用 `CLEARTYPE_QUALITY` 以获得更好的渲染效果
 - 确保字体名称使用 `L""` 前缀

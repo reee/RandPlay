@@ -55,25 +55,51 @@ namespace Utils {
 
     // Create a better font for the UI that scales with DPI
     HFONT CreateUIFont() {
-        HDC hdc = GetDC(NULL);
-        int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
-        ReleaseDC(NULL, hdc);
-        
-        int fontSize = -MulDiv(9, dpiY, 72); // 9pt font
-        
+        int dpi = GetDPIForWindow(NULL);
+        return CreateUIFontForDPI(dpi);
+    }
+
+    // Create a font for a specific DPI (used for DPI changes)
+    HFONT CreateUIFontForDPI(int dpi) {
+        int fontSize = -MulDiv(9, dpi, 72); // 9pt font
+
+        // Use GB2312_CHARSET for better Chinese support
+        // Try Microsoft YaHei UI first, fallback to Segoe UI
         return CreateFont(
             fontSize, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+            GB2312_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft YaHei UI"
         );
+    }
+
+    // Get DPI for a window (or primary monitor if hwnd is NULL)
+    int GetDPIForWindow(HWND hwnd) {
+        // Try to use GetDpiForWindow (Windows 10 1607+)
+        typedef UINT (WINAPI *GetDpiForWindowFunc)(HWND);
+        static GetDpiForWindowFunc pGetDpiForWindow = nullptr;
+
+        if (!pGetDpiForWindow) {
+            HMODULE hUser32 = GetModuleHandle(L"user32.dll");
+            if (hUser32) {
+                pGetDpiForWindow = (GetDpiForWindowFunc)GetProcAddress(hUser32, "GetDpiForWindow");
+            }
+        }
+
+        if (pGetDpiForWindow && hwnd) {
+            return pGetDpiForWindow(hwnd);
+        }
+
+        // Fallback to GetDeviceCaps
+        HDC hdc = GetDC(NULL);
+        int dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+        ReleaseDC(NULL, hdc);
+
+        return dpi;
     }
 
     // Helper function to scale UI elements based on DPI
     int ScaleDPI(int value) {
-        HDC hdc = GetDC(NULL);
-        int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
-        ReleaseDC(NULL, hdc);
-        
-        return MulDiv(value, dpiX, 96); // 96 is the default DPI
+        int dpi = GetDPIForWindow(NULL);
+        return MulDiv(value, dpi, 96); // 96 is the default DPI
     }
 }

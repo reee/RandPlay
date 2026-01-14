@@ -20,16 +20,16 @@ void UIHelpers::InitializeControls(HWND hwnd) {
     icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     icex.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icex);
-    
+
     // Get client area dimensions
     RECT rcClient;
     GetClientRect(hwnd, &rcClient);
     int width = rcClient.right - rcClient.left;
     int height = rcClient.bottom - rcClient.top;
-    
+
     // Create a better font for UI elements
     HFONT hFont = Utils::CreateUIFont();
-    
+
     // Calculate control dimensions and positions
     int margin = Utils::ScaleDPI(10);
     int buttonHeight = Utils::ScaleDPI(30);
@@ -37,21 +37,22 @@ void UIHelpers::InitializeControls(HWND hwnd) {
     int buttonWidth = Utils::ScaleDPI(120);
     int bottomInfoHeight = controlHeight;
     int buttonSpacing = Utils::ScaleDPI(5);
-      // Create the "Build Index" button
-    HWND hwndBuildIndex = CreateWindowEx(
+
+    // Create the "Build Index" button
+    g_hwndBuildIndexButton = CreateWindowEx(
         0, L"BUTTON", Utils::LoadStringResource(IDS_BUILD_INDEX).c_str(),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         margin, margin, buttonWidth, buttonHeight,
         hwnd, reinterpret_cast<HMENU>(static_cast<uintptr_t>(IDC_BUILD_INDEX_BUTTON)), GetModuleHandle(NULL), NULL);
-    SendMessage(hwndBuildIndex, WM_SETFONT, (WPARAM)hFont, TRUE);
-    
+    SendMessage(g_hwndBuildIndexButton, WM_SETFONT, (WPARAM)hFont, TRUE);
+
     // Create the "Open Random File" button
-    HWND hwndOpenRandom = CreateWindowEx(
+    g_hwndOpenRandomButton = CreateWindowEx(
         0, L"BUTTON", Utils::LoadStringResource(IDS_OPEN_RANDOM).c_str(),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         margin + buttonWidth + buttonSpacing, margin, buttonWidth, buttonHeight,
         hwnd, reinterpret_cast<HMENU>(static_cast<uintptr_t>(IDC_OPEN_RANDOM_BUTTON)), GetModuleHandle(NULL), NULL);
-    SendMessage(hwndOpenRandom, WM_SETFONT, (WPARAM)hFont, TRUE);
+    SendMessage(g_hwndOpenRandomButton, WM_SETFONT, (WPARAM)hFont, TRUE);
     
     // Create the recent files list as a ListView
     g_hwndRecentFilesList = CreateWindowEx(

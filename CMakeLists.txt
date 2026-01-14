@@ -104,6 +104,7 @@ function(configure_randplay_target TARGET_NAME OUTPUT_NAME)
         shell32
         ole32
         shlwapi
+        shcore
     )
     
     # Set compiler flags for MSVC
@@ -113,6 +114,7 @@ function(configure_randplay_target TARGET_NAME OUTPUT_NAME)
             /std:c++17      # C++ standard
             /W3             # Warning level 3
             /permissive-    # Disable non-conforming code
+            /utf-8          # UTF-8 source file encoding
         )
         
         # Release optimizations

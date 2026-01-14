@@ -10,6 +10,8 @@
 HWND g_hwndMain = NULL;
 HWND g_hwndRecentFilesList = NULL;
 HWND g_hwndFolderInfoStatic = NULL;
+HWND g_hwndBuildIndexButton = NULL;
+HWND g_hwndOpenRandomButton = NULL;
 std::wstring g_currentFilePath;
 std::vector<std::wstring> g_recentFiles;
 
@@ -23,8 +25,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     // Set DPI awareness to improve text rendering
-    SetProcessDPIAware();
-    
+    // Try Per-Monitor V2 (Windows 10 1703+)
+    if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
+        // Fallback to Per-Monitor (Windows 8.1+)
+        HMODULE hShcore = LoadLibrary(L"shcore.dll");
+        if (hShcore) {
+            typedef HRESULT (WINAPI *SetProcessDpiAwarenessFunc)(PROCESS_DPI_AWARENESS);
+            SetProcessDpiAwarenessFunc pSetProcessDpiAwareness =
+                (SetProcessDpiAwarenessFunc)GetProcAddress(hShcore, "SetProcessDpiAwareness");
+            if (pSetProcessDpiAwareness) {
+                pSetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+            }
+            FreeLibrary(hShcore);
+        }
+        // Final fallback to Windows Vista/7
+        if (!SetProcessDPIAware()) {
+            // Failed to set DPI awareness, continue anyway
+        }
+    }
+
     // Enable visual styles for modern look
     Utils::EnableVisualStyles();
     
@@ -157,6 +176,40 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+
+    case WM_DPICHANGED:
+        {
+            // DPI has changed - this happens when window moves to a different DPI monitor
+            int dpiX = LOWORD(wParam);
+            int dpiY = HIWORD(wParam);
+
+            // Recreate fonts with new DPI
+            HFONT hNewFont = Utils::CreateUIFontForDPI(dpiY);
+
+            // Update font for all controls
+            if (g_hwndBuildIndexButton) {
+                SendMessage(g_hwndBuildIndexButton, WM_SETFONT, (WPARAM)hNewFont, TRUE);
+            }
+            if (g_hwndOpenRandomButton) {
+                SendMessage(g_hwndOpenRandomButton, WM_SETFONT, (WPARAM)hNewFont, TRUE);
+            }
+            if (g_hwndRecentFilesList) {
+                SendMessage(g_hwndRecentFilesList, WM_SETFONT, (WPARAM)hNewFont, TRUE);
+            }
+            if (g_hwndFolderInfoStatic) {
+                SendMessage(g_hwndFolderInfoStatic, WM_SETFONT, (WPARAM)hNewFont, TRUE);
+            }
+
+            // Resize and reposition window using the suggested rect
+            RECT* pSuggestedRect = (RECT*)lParam;
+            SetWindowPos(hwnd, NULL,
+                pSuggestedRect->left, pSuggestedRect->top,
+                pSuggestedRect->right - pSuggestedRect->left,
+                pSuggestedRect->bottom - pSuggestedRect->top,
+                SWP_NOZORDER | SWP_NOACTIVATE);
+
+            return 0;
+        }
 
     case WM_SIZE:
         {
