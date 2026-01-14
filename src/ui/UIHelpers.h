@@ -15,9 +15,10 @@ public:
     // Recent files management
     static void AddToRecentFiles(const std::wstring& filePath);
     static void UpdateRecentFilesList();
+    static void ShowListContextMenu(int xPos, int yPos, int itemIndex);
     static void OpenFileFromList(int index);
     static void OpenFolderFromList(int index);
-    
+
     // Folder info management
     static void UpdateFolderInfo();
     

@@ -10,7 +10,7 @@ namespace AppConstants {
     const wchar_t* const SETTINGS_FILE_NAME = L"settings.dat";
     
     // UI constants
-    const int MAX_RECENT_FILES = 10;
+    const int MAX_RECENT_FILES = 100;
     
     // Common file extensions
     const wchar_t* const VIDEO_EXTENSIONS[] = { L".mp4", L".avi", L".mkv", L".mov", L".wmv" };

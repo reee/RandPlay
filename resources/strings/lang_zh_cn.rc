@@ -58,4 +58,8 @@ BEGIN
     IDS_FILE_NOT_EXISTS       L"所选文件不再存在。"
     IDS_FOLDER_NOT_EXISTS     L"所选文件夹不再存在。"
     IDS_NO_FILE_OPEN          L"当前没有打开的文件。"
+
+    // Context menu items
+    IDS_MENU_OPEN_FILE        L"打开文件"
+    IDS_MENU_OPEN_FOLDER      L"打开文件夹"
 END

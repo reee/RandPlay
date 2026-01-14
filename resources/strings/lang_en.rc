@@ -58,4 +58,8 @@ BEGIN
     IDS_FILE_NOT_EXISTS       L"The selected file no longer exists."
     IDS_FOLDER_NOT_EXISTS     L"The selected folder no longer exists."
     IDS_NO_FILE_OPEN          L"No file is currently open."
+
+    // Context menu items
+    IDS_MENU_OPEN_FILE        L"Open File"
+    IDS_MENU_OPEN_FOLDER      L"Open Folder"
 END

@@ -310,33 +310,57 @@ void UIHelpers::OpenFileFromList(int index) {
     ShellExecute(NULL, L"open", filePath.c_str(), NULL, NULL, SW_SHOW);
 }
 
+void UIHelpers::ShowListContextMenu(int xPos, int yPos, int itemIndex) {
+    if (itemIndex < 0 || !g_hwndRecentFilesList)
+        return;
+
+    HMENU hMenu = CreatePopupMenu();
+    if (!hMenu)
+        return;
+
+    AppendMenuW(hMenu, MF_STRING, 1, Utils::LoadStringResource(IDS_MENU_OPEN_FILE).c_str());
+    AppendMenuW(hMenu, MF_STRING, 2, Utils::LoadStringResource(IDS_MENU_OPEN_FOLDER).c_str());
+
+    int selectedCmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_LEFTALIGN, xPos, yPos, 0, g_hwndMain, NULL);
+    DestroyMenu(hMenu);
+
+    if (selectedCmd == 1) {
+        OpenFileFromList(itemIndex);
+    } else if (selectedCmd == 2) {
+        OpenFolderFromList(itemIndex);
+    }
+}
+
 void UIHelpers::OpenFolderFromList(int index) {
     if (index < 0 || !g_hwndRecentFilesList)
         return;
-    
+
     LVITEM lvi = {};
     lvi.mask = LVIF_PARAM;
     lvi.iItem = index;
     lvi.iSubItem = 0;
-    
+
     if (!ListView_GetItem(g_hwndRecentFilesList, &lvi))
         return;
-    
+
     wchar_t* pFilePath = reinterpret_cast<wchar_t*>(lvi.lParam);
     if (!pFilePath)
         return;
-    
+
     std::wstring filePath(pFilePath);
     std::filesystem::path path(filePath);
     std::wstring folderPath = path.parent_path().wstring();
-    
+    std::wstring fileName = path.filename().wstring();
+
     if (!std::filesystem::exists(folderPath)) {
         MessageBox(g_hwndMain, Utils::LoadStringResource(IDS_FOLDER_NOT_EXISTS).c_str(),
                    Utils::LoadStringResource(IDS_ERROR).c_str(), MB_OK | MB_ICONERROR);
         return;
     }
-    
-    ShellExecuteW(NULL, L"explore", folderPath.c_str(), NULL, NULL, SW_SHOW);
+
+    // Use explorer /select to open the folder and select the file
+    std::wstring selectParams = L"/select,\"" + filePath + L"\"";
+    ShellExecuteW(NULL, L"open", L"explorer.exe", selectParams.c_str(), NULL, SW_SHOW);
 }
 
 void UIHelpers::UpdateFolderInfo() {

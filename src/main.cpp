@@ -154,25 +154,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_NOTIFY:
         {
             NMHDR* pnmhdr = (NMHDR*)lParam;
-            if (pnmhdr->idFrom == IDC_RECENT_FILES_LIST)
+            if (pnmhdr->idFrom == IDC_RECENT_FILES_LIST && pnmhdr->code == NM_RCLICK)
             {
-                if (pnmhdr->code == NM_DBLCLK)
+                // Handle right-click on ListView
+                NMITEMACTIVATE* pnmia = (NMITEMACTIVATE*)lParam;
+                int index = pnmia->iItem;
+                if (index != -1)
                 {
-                    // Handle double-click on any column
-                    NMITEMACTIVATE* pnmia = (NMITEMACTIVATE*)lParam;
-                    int index = pnmia->iItem;
-                    if (index != -1)
-                    {                        if (pnmia->iSubItem == 1) // Folder column
-                        {
-                            UIHelpers::OpenFolderFromList(index);
-                        }
-                        else // File name column
-                        {
-                            UIHelpers::OpenFileFromList(index);
-                        }
-                    }
-                    return 0;
+                    // Get the mouse position from the notification
+                    POINT pt = {pnmia->ptAction.x, pnmia->ptAction.y};
+                    ClientToScreen(g_hwndRecentFilesList, &pt);
+                    UIHelpers::ShowListContextMenu(pt.x, pt.y, index);
                 }
+                return 0;
             }
         }
         break;
