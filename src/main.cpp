@@ -5,6 +5,7 @@
 #include "core/Settings.h"
 #include "core/FileIndexer.h"
 #include "core/LanguageManager.h"
+#include "core/HotkeyManager.h"
 #include "ui/UIHelpers.h"
 
 // Global variables
@@ -59,6 +60,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Initialize language system (must be after settings, before UI)
     LanguageManager::Initialize();
+
+    // Initialize hotkey manager (must be after settings)
+    HotkeyManager::Initialize();
 
     g_fileIndexer = new FileIndexer();
 
@@ -145,6 +149,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // Update recent files list
             UIHelpers::UpdateRecentFilesList();
+
+            // Register global hotkey
+            HotkeyManager::RegisterGlobalHotkey(hwnd);
+
             return 0;
         }
 
@@ -266,8 +274,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
         }
         break;
-        
+
+    case WM_HOTKEY:
+        // Handle global hotkey
+        HotkeyManager::OnHotkey(hwnd, (int)wParam);
+        return 0;
+
     case WM_DESTROY:
+        // Unregister global hotkey
+        HotkeyManager::UnregisterGlobalHotkey(hwnd);
+
         // Clean up ListView item data to prevent memory leaks
         if (g_hwndRecentFilesList)
         {

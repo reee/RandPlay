@@ -68,4 +68,15 @@ BEGIN
     IDS_LANGUAGE_AUTO         L"自动检测"
     IDS_LANGUAGE_EN           L"英语"
     IDS_LANGUAGE_ZH           L"中文"
+
+    // Hotkey settings
+    IDS_HOTKEY                L"快捷键"
+    IDS_HOTKEY_ENABLED        L"启用全局快捷键"
+    IDS_SET_HOTKEY            L"设置快捷键"
+    IDS_HOTKEY_PROMPT         L"点击设置快捷键按钮后，按下您想要的组合键"
+    IDS_HOTKEY_DISABLED       L"已禁用"
+    IDS_PRESS_KEY             L"请按下组合键..."
+    IDS_HOTKEY_CAPTURED       L"已捕获快捷键: %s"
+    IDS_HOTKEY_INVALID        L"无效的快捷键。请至少使用一个修饰键（Ctrl、Alt、Shift 或 Win）结合其他键。"
+    IDS_HOTKEY_CONFLICT       L"快捷键注册失败。可能与其他应用程序冲突。"
 END

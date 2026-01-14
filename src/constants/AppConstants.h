@@ -28,4 +28,19 @@ namespace AppConstants {
         constexpr int ENGLISH = 0;
         constexpr int CHINESE = 1;
     }
+
+    // Hotkey settings
+    namespace Hotkey {
+        constexpr int ID_OPEN_RANDOM = 1;  // Hotkey identifier
+
+        // Modifier flags
+        constexpr UINT NONE = 0;
+        constexpr UINT CTRL = MOD_CONTROL;
+        constexpr int ALT = MOD_ALT;
+        constexpr UINT SHIFT = MOD_SHIFT;
+        constexpr UINT WIN = MOD_WIN;
+
+        // Common virtual key codes
+        constexpr UINT DISABLED = 0;      // Disabled hotkey
+    }
 }

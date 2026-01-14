@@ -49,6 +49,8 @@ set(COMMON_SOURCES
     src/core/FileIndexer.h
     src/core/LanguageManager.cpp
     src/core/LanguageManager.h
+    src/core/HotkeyManager.cpp
+    src/core/HotkeyManager.h
 
     # UI modules
     src/ui/UIHelpers.cpp
@@ -202,6 +204,7 @@ function(add_source_groups TARGET_NAME)
         src/core/Settings.cpp
         src/core/FileIndexer.cpp
         src/core/LanguageManager.cpp
+        src/core/HotkeyManager.cpp
     )
     source_group("Source Files\\UI" FILES
         src/ui/UIHelpers.cpp
@@ -211,6 +214,7 @@ function(add_source_groups TARGET_NAME)
         src/core/Settings.h
         src/core/FileIndexer.h
         src/core/LanguageManager.h
+        src/core/HotkeyManager.h
     )
     source_group("Header Files\\UI" FILES
         src/ui/UIHelpers.h

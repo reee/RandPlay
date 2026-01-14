@@ -9,6 +9,7 @@ public:
     
     // Dialog management
     static INT_PTR CALLBACK SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    static INT_PTR CALLBACK HotkeyCaptureDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     static void ShowSettingsDialog();
     static void BrowseForFolder(HWND hwndParent);
     

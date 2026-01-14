@@ -68,4 +68,15 @@ BEGIN
     IDS_LANGUAGE_AUTO         L"Auto Detect"
     IDS_LANGUAGE_EN           L"English"
     IDS_LANGUAGE_ZH           L"Chinese"
+
+    // Hotkey settings
+    IDS_HOTKEY                L"Hotkey"
+    IDS_HOTKEY_ENABLED        L"Enable global hotkey"
+    IDS_SET_HOTKEY            L"Set Hotkey"
+    IDS_HOTKEY_PROMPT         L"Click 'Set Hotkey', then press your key combination"
+    IDS_HOTKEY_DISABLED       L"Disabled"
+    IDS_PRESS_KEY             L"Press key combination..."
+    IDS_HOTKEY_CAPTURED       L"Hotkey captured: %s"
+    IDS_HOTKEY_INVALID        L"Invalid hotkey. Please use at least one modifier key (Ctrl, Alt, Shift, or Win) combined with another key."
+    IDS_HOTKEY_CONFLICT       L"Failed to register hotkey. It may conflict with another application."
 END

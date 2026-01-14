@@ -5,6 +5,7 @@
 #include "../core/Settings.h"
 #include "../core/FileIndexer.h"
 #include "../core/LanguageManager.h"
+#include "../core/HotkeyManager.h"
 #include <random>
 #include <filesystem>
 
@@ -14,6 +15,16 @@ struct TempSettings {
     int extensionType;
     wchar_t customExtension[32];
     int language;
+    UINT hotkeyModifiers;
+    UINT hotkeyKey;
+    bool hotkeyEnabled;
+};
+
+// Hotkey capture dialog data
+struct HotkeyCaptureData {
+    UINT capturedModifiers;
+    UINT capturedKey;
+    bool captured;
 };
 
 void UIHelpers::InitializeControls(HWND hwnd) {
@@ -107,6 +118,9 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
             SendMessage(GetDlgItem(hwnd, IDC_EXTENSION_COMBO), WM_SETFONT, (WPARAM)hFont, TRUE);
             SendMessage(GetDlgItem(hwnd, IDC_CUSTOM_EXT_EDIT), WM_SETFONT, (WPARAM)hFont, TRUE);
             SendMessage(GetDlgItem(hwnd, IDC_LANGUAGE_COMBO), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_HOTKEY_ENABLED), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_HOTKEY_DISPLAY), WM_SETFONT, (WPARAM)hFont, TRUE);
+            SendMessage(GetDlgItem(hwnd, IDC_SET_HOTKEY_BTN), WM_SETFONT, (WPARAM)hFont, TRUE);
             SendMessage(GetDlgItem(hwnd, IDOK), WM_SETFONT, (WPARAM)hFont, TRUE);
             SendMessage(GetDlgItem(hwnd, IDCANCEL), WM_SETFONT, (WPARAM)hFont, TRUE);
 
@@ -168,6 +182,11 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
             int langIndex = currentLang + 1; // Map -1,0,1 to 0,1,2
             SendMessage(hwndLangCombo, CB_SETCURSEL, langIndex, 0);
 
+            // Initialize hotkey controls
+            Button_SetCheck(GetDlgItem(hwnd, IDC_HOTKEY_ENABLED), HotkeyManager::GetEnabled() ? BST_CHECKED : BST_UNCHECKED);
+            SetWindowText(GetDlgItem(hwnd, IDC_HOTKEY_DISPLAY), HotkeyManager::GetHotkeyString().c_str());
+            SetWindowText(GetDlgItem(hwnd, IDC_SET_HOTKEY_BTN), Utils::LoadStringResource(IDS_SET_HOTKEY).c_str());
+
             // Save temporary settings
             wcscpy_s(tempSettings.directory, g_settingsManager->GetCurrentDirectory().c_str());
             tempSettings.extensionType = extType;
@@ -177,6 +196,9 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
             } else {
                 wcscpy_s(tempSettings.customExtension, L".txt");
             }
+
+            // Save current hotkey settings to temp storage
+            HotkeyManager::GetHotkey(tempSettings.hotkeyModifiers, tempSettings.hotkeyKey, tempSettings.hotkeyEnabled);
 
             return TRUE;
         }
@@ -197,6 +219,46 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                 }
                 return TRUE;
             }
+
+        case IDC_HOTKEY_ENABLED:
+            {
+                // Update tempSettings when checkbox state changes
+                tempSettings.hotkeyEnabled = (Button_GetCheck(GetDlgItem(hwnd, IDC_HOTKEY_ENABLED)) == BST_CHECKED);
+
+                // Update display
+                if (tempSettings.hotkeyEnabled) {
+                    HotkeyManager::SetHotkey(tempSettings.hotkeyModifiers, tempSettings.hotkeyKey, true);
+                    SetWindowText(GetDlgItem(hwnd, IDC_HOTKEY_DISPLAY), HotkeyManager::GetHotkeyString().c_str());
+                } else {
+                    SetWindowText(GetDlgItem(hwnd, IDC_HOTKEY_DISPLAY), Utils::LoadStringResource(IDS_HOTKEY_DISABLED).c_str());
+                }
+                return TRUE;
+            }
+
+        case IDC_SET_HOTKEY_BTN:
+            {
+                // Show hotkey capture dialog
+                HotkeyCaptureData captureData = {};
+                captureData.capturedModifiers = tempSettings.hotkeyModifiers;
+                captureData.capturedKey = tempSettings.hotkeyKey;
+                captureData.captured = false;
+
+                INT_PTR result = DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_HOTKEY_CAPTURE_DIALOG),
+                                                hwnd, HotkeyCaptureDialogProc, reinterpret_cast<LPARAM>(&captureData));
+
+                if (result == IDOK && captureData.captured) {
+                    // Update temp settings with captured hotkey
+                    tempSettings.hotkeyModifiers = captureData.capturedModifiers;
+                    tempSettings.hotkeyKey = captureData.capturedKey;
+
+                    // Update HotkeyManager temporarily for display
+                    HotkeyManager::SetHotkey(tempSettings.hotkeyModifiers, tempSettings.hotkeyKey, tempSettings.hotkeyEnabled);
+
+                    // Update display
+                    SetWindowText(GetDlgItem(hwnd, IDC_HOTKEY_DISPLAY), HotkeyManager::GetHotkeyString().c_str());
+                }
+                return TRUE;
+            }
             
         case IDOK:
             {
@@ -209,10 +271,14 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                 int langIndex = ComboBox_GetCurSel(GetDlgItem(hwnd, IDC_LANGUAGE_COMBO));
                 tempSettings.language = langIndex - 1;
 
-                  // Update global settings
+                // Update global settings
                 g_settingsManager->SetCurrentDirectory(tempSettings.directory);
                 g_settingsManager->SetExtensionType(tempSettings.extensionType, tempSettings.customExtension);
                 g_settingsManager->SetLanguageAndSave(tempSettings.language);
+
+                // Save hotkey settings
+                g_settingsManager->SetHotkeyConfig(tempSettings.hotkeyModifiers, tempSettings.hotkeyKey, tempSettings.hotkeyEnabled);
+                HotkeyManager::SetHotkey(tempSettings.hotkeyModifiers, tempSettings.hotkeyKey, tempSettings.hotkeyEnabled);
 
                 // Reload index count since directory or extension may have changed
                 g_fileIndexer->LoadIndexCount();
@@ -234,6 +300,9 @@ INT_PTR CALLBACK UIHelpers::SettingsDialogProc(HWND hwnd, UINT uMsg, WPARAM wPar
                         ReloadAllUIText();
                     }
                 }
+
+                // Reregister hotkey with new configuration
+                HotkeyManager::ReregisterHotkey(g_hwndMain);
 
                 EndDialog(hwnd, IDOK);
                 return TRUE;
@@ -581,4 +650,104 @@ void UIHelpers::ReloadAllUIText() {
     // Force redraw of the main window
     InvalidateRect(g_hwndMain, NULL, TRUE);
     UpdateWindow(g_hwndMain);
+}
+
+INT_PTR CALLBACK UIHelpers::HotkeyCaptureDialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static HotkeyCaptureData* pData = nullptr;
+
+    switch (uMsg) {
+        case WM_INITDIALOG:
+        {
+            pData = (HotkeyCaptureData*)lParam;
+            pData->capturedModifiers = 0;
+            pData->capturedKey = 0;
+            pData->captured = false;
+
+            // Set prompt text
+            SetWindowText(hwnd, Utils::LoadStringResource(IDS_PRESS_KEY).c_str());
+
+            // Center the dialog on parent window
+            HWND hwndParent = GetParent(hwnd);
+            if (hwndParent) {
+                RECT rcParent, rcDialog;
+                GetWindowRect(hwndParent, &rcParent);
+                GetWindowRect(hwnd, &rcDialog);
+
+                int x = rcParent.left + (rcParent.right - rcParent.left - (rcDialog.right - rcDialog.left)) / 2;
+                int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDialog.bottom - rcDialog.top)) / 2;
+                SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+            }
+
+            // Set timer to check keyboard state every 50ms
+            SetTimer(hwnd, 1, 50, NULL);
+            return TRUE;
+        }
+
+        case WM_TIMER:
+        {
+            if (wParam == 1 && pData && !pData->captured) {
+                pData->capturedModifiers = 0;
+                pData->capturedKey = 0;
+
+                // Check modifier keys
+                if (GetAsyncKeyState(VK_CONTROL) & 0x8000) pData->capturedModifiers |= MOD_CONTROL;
+                if (GetAsyncKeyState(VK_SHIFT) & 0x8000) pData->capturedModifiers |= MOD_SHIFT;
+                if (GetAsyncKeyState(VK_MENU) & 0x8000) pData->capturedModifiers |= MOD_ALT;
+                if (GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000) pData->capturedModifiers |= MOD_WIN;
+
+                // Check function keys F1-F24
+                for (UINT vk = VK_F1; vk <= VK_F24; vk++) {
+                    if (GetAsyncKeyState(vk) & 0x8000) {
+                        pData->capturedKey = vk;
+                        pData->captured = true;
+                        KillTimer(hwnd, 1);
+                        EndDialog(hwnd, IDOK);
+                        return TRUE;
+                    }
+                }
+
+                // Check letter keys A-Z
+                for (UINT vk = 'A'; vk <= 'Z'; vk++) {
+                    if (GetAsyncKeyState(vk) & 0x8000) {
+                        pData->capturedKey = vk;
+                        pData->captured = true;
+                        KillTimer(hwnd, 1);
+                        EndDialog(hwnd, IDOK);
+                        return TRUE;
+                    }
+                }
+
+                // Check digit keys 0-9
+                for (UINT vk = '0'; vk <= '9'; vk++) {
+                    if (GetAsyncKeyState(vk) & 0x8000) {
+                        pData->capturedKey = vk;
+                        pData->captured = true;
+                        KillTimer(hwnd, 1);
+                        EndDialog(hwnd, IDOK);
+                        return TRUE;
+                    }
+                }
+
+                // Check other common keys
+                if (GetAsyncKeyState(VK_SPACE) & 0x8000) { pData->capturedKey = VK_SPACE; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_RETURN) & 0x8000) { pData->capturedKey = VK_RETURN; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) { pData->capturedKey = VK_ESCAPE; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_TAB) & 0x8000) { pData->capturedKey = VK_TAB; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_BACK) & 0x8000) { pData->capturedKey = VK_BACK; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_DELETE) & 0x8000) { pData->capturedKey = VK_DELETE; pData->captured = true; }
+                else if (GetAsyncKeyState(VK_INSERT) & 0x8000) { pData->capturedKey = VK_INSERT; pData->captured = true; }
+
+                if (pData->captured) {
+                    KillTimer(hwnd, 1);
+                    EndDialog(hwnd, IDOK);
+                }
+            }
+            return TRUE;
+        }
+
+        case WM_DESTROY:
+            KillTimer(hwnd, 1);
+            return FALSE;
+    }
+    return FALSE;
 }

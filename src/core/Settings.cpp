@@ -22,6 +22,11 @@ void SettingsManager::LoadSettings() {
         currentDirectory = std::filesystem::current_path().wstring();
         currentExtension = L".mp4;.avi;.mkv;.mov;.wmv";
         currentLanguage = AppConstants::Language::AUTO_DETECT;
+
+        // Default hotkey: Ctrl+Shift+R
+        currentHotkeyModifiers = MOD_CONTROL | MOD_SHIFT;
+        currentHotkeyKey = 'R';
+        currentHotkeyEnabled = true;
         return;
     }
 
@@ -42,8 +47,26 @@ void SettingsManager::LoadSettings() {
     // Old settings files (without language) will be smaller
     if (actualSize < expectedSize) {
         currentLanguage = AppConstants::Language::AUTO_DETECT;
+        // Also set default hotkey for very old files
+        currentHotkeyModifiers = MOD_CONTROL | MOD_SHIFT;
+        currentHotkeyKey = 'R';
+        currentHotkeyEnabled = true;
     } else {
         currentLanguage = settings.language;
+
+        // Load hotkey settings (with backward compatibility)
+        // Calculate offset to hotkey fields
+        size_t settingsSizeWithoutHotkey = offsetof(Settings, openRandomHotkeyModifiers);
+        if (actualSize >= settingsSizeWithoutHotkey + sizeof(UINT) + sizeof(UINT) + sizeof(bool)) {
+            currentHotkeyModifiers = settings.openRandomHotkeyModifiers;
+            currentHotkeyKey = settings.openRandomHotkeyKey;
+            currentHotkeyEnabled = settings.hotkeyEnabled;
+        } else {
+            // Old settings without hotkey - use defaults
+            currentHotkeyModifiers = MOD_CONTROL | MOD_SHIFT;
+            currentHotkeyKey = 'R';
+            currentHotkeyEnabled = true;
+        }
     }
 }
 
@@ -76,6 +99,11 @@ void SettingsManager::SaveSettings() {
 
     // Save language preference
     settings.language = currentLanguage;
+
+    // Save hotkey configuration
+    settings.openRandomHotkeyModifiers = currentHotkeyModifiers;
+    settings.openRandomHotkeyKey = currentHotkeyKey;
+    settings.hotkeyEnabled = currentHotkeyEnabled;
 
     file.write(reinterpret_cast<const char*>(&settings), sizeof(Settings));
     file.close();
