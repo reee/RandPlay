@@ -5,6 +5,18 @@ REM ============================================================
 REM RandPlay Release Build Script
 REM ============================================================
 
+REM Enable ANSI color support for Windows 10+
+set "ESC="
+for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (
+    set "ESC=%%b"
+)
+set "ANSI_RESET=%ESC%[0m"
+set "ANSI_CYAN=%ESC%[96m"
+set "ANSI_GREEN=%ESC%[92m"
+set "ANSI_RED=%ESC%[91m"
+set "ANSI_WHITE=%ESC%[97m"
+set "ANSI_BLUE=%ESC%[94m"
+
 REM Set project paths
 set "SCRIPT_DIR=%~dp0"
 set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
@@ -16,32 +28,24 @@ set "BUILD_DIR=%PROJECT_ROOT%\build"
 set "BIN_DIR=%BUILD_DIR%\bin"
 set "PROJECT_VERSION=1.0.0"
 
-REM Color codes (Windows 10+)
-set "COLOR_RESET=[0m"
-set "COLOR_CYAN=[96m"
-set "COLOR_GREEN=[92m"
-set "COLOR_RED=[91m"
-set "COLOR_WHITE=[97m"
-set "COLOR_BLUE=[94m"
-
 REM Print header
 echo.
-echo %COLOR_CYAN%=============================================================%COLOR_RESET%
-echo %COLOR_CYAN%RandPlay - Release Build Script%COLOR_RESET%
-echo %COLOR_CYAN%=============================================================%COLOR_RESET%
+echo %ANSI_CYAN%=============================================================%ANSI_RESET%
+echo %ANSI_CYAN%RandPlay - Release Build Script%ANSI_RESET%
+echo %ANSI_CYAN%=============================================================%ANSI_RESET%
 echo.
 
-echo %COLOR_BLUE%[INFO] Preparing release build and distribution%COLOR_RESET%
+echo %ANSI_BLUE%[INFO] Preparing release build and distribution%ANSI_RESET%
 echo.
 
 REM Clean directories
-echo %COLOR_WHITE%[1] Cleaning build directories%COLOR_RESET%
+echo %ANSI_WHITE%[1] Cleaning build directories%ANSI_RESET%
 if exist "%BUILD_DIR%" (
-    echo %COLOR_BLUE%[INFO] Removing directory: %BUILD_DIR%%COLOR_RESET%
+    echo %ANSI_BLUE%[INFO] Removing directory: %BUILD_DIR%%ANSI_RESET%
     rmdir /s /q "%BUILD_DIR%" 2>nul
 )
 if exist "%PROJECT_ROOT%\dist" (
-    echo %COLOR_BLUE%[INFO] Removing directory: %PROJECT_ROOT%\dist%COLOR_RESET%
+    echo %ANSI_BLUE%[INFO] Removing directory: %PROJECT_ROOT%\dist%ANSI_RESET%
     rmdir /s /q "%PROJECT_ROOT%\dist" 2>nul
 )
 if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
@@ -50,43 +54,43 @@ if not exist "%PROJECT_ROOT%\dist" mkdir "%PROJECT_ROOT%\dist"
 REM Check if cmake is available
 where cmake >nul 2>&1
 if %errorlevel% neq 0 (
-    echo %COLOR_RED%[ERROR] cmake not found. Please ensure it is installed.%COLOR_RESET%
+    echo %ANSI_RED%[ERROR] cmake not found. Please ensure it is installed.%ANSI_RESET%
     pause
     exit /b 1
 )
 
 REM Generate build files
-echo %COLOR_WHITE%[2] Generating build files%COLOR_RESET%
+echo %ANSI_WHITE%[2] Generating build files%ANSI_RESET%
 cmake -B "%BUILD_DIR%" -A x64
 if %errorlevel% neq 0 (
-    echo %COLOR_RED%[ERROR] Failed to generate build files%COLOR_RESET%
+    echo %ANSI_RED%[ERROR] Failed to generate build files%ANSI_RESET%
     pause
     exit /b 1
 )
 
 REM Build Release version
-echo %COLOR_WHITE%[3] Building Release version%COLOR_RESET%
+echo %ANSI_WHITE%[3] Building Release version%ANSI_RESET%
 cmake --build "%BUILD_DIR%" --config Release
 if %errorlevel% neq 0 (
-    echo %COLOR_RED%[ERROR] Build failed%COLOR_RESET%
+    echo %ANSI_RED%[ERROR] Build failed%ANSI_RESET%
     pause
     exit /b 1
 )
 
 REM Prepare distribution
-echo %COLOR_WHITE%[4] Preparing distribution package%COLOR_RESET%
+echo %ANSI_WHITE%[4] Preparing distribution package%ANSI_RESET%
 set "RELEASE_DIR=%PROJECT_ROOT%\dist\RandPlay_%PROJECT_VERSION%"
 if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
 
 REM Copy executable files
 if exist "%BIN_DIR%\Release\RandPlay_EN.exe" (
     copy "%BIN_DIR%\Release\RandPlay_EN.exe" "%RELEASE_DIR%\" >nul
-    echo %COLOR_GREEN%[OK] Copied English version%COLOR_RESET%
+    echo %ANSI_GREEN%[OK] Copied English version%ANSI_RESET%
 )
 
 if exist "%BIN_DIR%\Release\RandPlay_ZH_CN.exe" (
     copy "%BIN_DIR%\Release\RandPlay_ZH_CN.exe" "%RELEASE_DIR%\" >nul
-    echo %COLOR_GREEN%[OK] Copied Chinese version%COLOR_RESET%
+    echo %ANSI_GREEN%[OK] Copied Chinese version%ANSI_RESET%
 )
 
 REM Copy resource files
@@ -103,7 +107,7 @@ if exist "%PROJECT_ROOT%\LICENSE" (
 )
 
 REM Generate version info file
-echo %COLOR_BLUE%[INFO] Generating version info file%COLOR_RESET%
+echo %ANSI_BLUE%[INFO] Generating version info file%ANSI_RESET%
 
 REM Get current timestamp
 for /f "tokens=2 delims==" %%i in ('wmic OS Get localdatetime /value') do set "dt=%%i"
@@ -133,7 +137,7 @@ echo For more information, visit: https://github.com/yourname/RandPlay
 ) > "%RELEASE_DIR%\VERSION.txt"
 
 REM Generate usage instructions file
-echo %COLOR_BLUE%[INFO] Generating usage instructions file%COLOR_RESET%
+echo %ANSI_BLUE%[INFO] Generating usage instructions file%ANSI_RESET%
 (
 echo RandPlay - Random File Player
 echo =============================
@@ -179,27 +183,27 @@ echo.
 echo Enjoy using RandPlay!
 ) > "%RELEASE_DIR%\HOW_TO_USE.txt"
 
-echo %COLOR_WHITE%[5] Complete%COLOR_RESET%
+echo %ANSI_WHITE%[5] Complete%ANSI_RESET%
 
 REM Display summary
 echo.
-echo %COLOR_GREEN%[OK] Release package created successfully%COLOR_RESET%
-echo %COLOR_BLUE%[INFO] Release directory: %RELEASE_DIR%%COLOR_RESET%
+echo %ANSI_GREEN%[OK] Release package created successfully%ANSI_RESET%
+echo %ANSI_BLUE%[INFO] Release directory: %RELEASE_DIR%%ANSI_RESET%
 
 if exist "%RELEASE_DIR%\RandPlay_EN.exe" (
     for %%f in ("%RELEASE_DIR%\RandPlay_EN.exe") do (
-        echo %COLOR_BLUE%[INFO] RandPlay_EN.exe - %%~zf bytes%COLOR_RESET%
+        echo %ANSI_BLUE%[INFO] RandPlay_EN.exe - %%~zf bytes%ANSI_RESET%
     )
 )
 
 if exist "%RELEASE_DIR%\RandPlay_ZH_CN.exe" (
     for %%f in ("%RELEASE_DIR%\RandPlay_ZH_CN.exe") do (
-        echo %COLOR_BLUE%[INFO] RandPlay_ZH_CN.exe - %%~zf bytes%COLOR_RESET%
+        echo %ANSI_BLUE%[INFO] RandPlay_ZH_CN.exe - %%~zf bytes%ANSI_RESET%
     )
 )
 
 echo.
-echo %COLOR_BLUE%[INFO] Open release directory? (Y/N)%COLOR_RESET%
+echo %ANSI_BLUE%[INFO] Open release directory? (Y/N)%ANSI_RESET%
 set /p open_dir=">"
 if /i "%open_dir%"=="y" (
     start "" "%RELEASE_DIR%"
