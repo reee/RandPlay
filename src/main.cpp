@@ -79,8 +79,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     RegisterClass(&wc);
 
     // Scale window size based on DPI
-    int windowWidth = Utils::ScaleDPI(300);
-    int windowHeight = Utils::ScaleDPI(300);
+    int windowWidth = Utils::ScaleDPI(600);
+    int windowHeight = Utils::ScaleDPI(400);
     
     // Create the window
     g_hwndMain = CreateWindowEx(
