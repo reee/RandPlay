@@ -24,11 +24,11 @@ The build produces **three targets that must ship together** in the same directo
 - `RandPlay_en.dll` — English resource DLL
 - `RandPlay_zh_cn.dll` — Simplified Chinese resource DLL
 
-The EXE loads language resources from the DLLs at runtime via `LoadLibraryExW`; if a DLL is missing it falls back to English DLL, then to resources embedded in the EXE.
+The EXE loads language resources from the DLLs at runtime via `LoadLibraryExW`. On a missing DLL, the fallback is asymmetric: when the *requested* language is Chinese and `RandPlay_zh_cn.dll` fails to load, it retries with `RandPlay_en.dll`; if that also fails (or the requested language was English and `RandPlay_en.dll` is missing), it falls back to English resources embedded in the EXE (`LoadStringResource` uses `GetModuleHandle(NULL)`).
 
 There is **no automated test suite**. After code changes, do not attempt to compile yourself — ask the user to run the build.
 
-> Note: `scripts/build.bat`, `scripts/build_release.bat`, and `README.md` still reference an obsolete two-executable build (`RandPlay_EN.exe` / `RandPlay_ZH_CN.exe`) that no longer exists. Do not trust those files for build commands; use CMake directly as shown above.
+> Note: `README.md` is out of date — it references scripts and docs that no longer exist (e.g. `build_cmake_auto.bat`, `cmake_build.bat`, `MIGRATION_SUMMARY.md`) and an incorrect `scripts/{build,dev,dist}/` subdirectory layout. The `scripts/*.bat` files themselves are current and reference the correct DLL artifacts. For canonical build commands, use CMake directly as shown above.
 
 ## Architecture
 
@@ -58,6 +58,13 @@ resources/
 └── strings/{lang_en,lang_zh_cn}.rc  # String tables
 
 include/pch.h                 # Precompiled header; defines UNICODE, links comctl32/shlwapi/shcore
+
+scripts/                      # Build/dev batch scripts (flat layout, no subdirectories)
+├── build.bat                 # CMake configure + build, optional `run` arg to launch
+├── build_release.bat         # Release build + zipped distribution package
+├── dev.bat                   # Build and launch the app
+├── functions.bat             # Shared helpers sourced by the other scripts
+└── README.md                 # Scripts documentation (Chinese)
 ```
 
 ### Global state
@@ -91,7 +98,7 @@ A single EXE plus resource-only DLLs (not separate per-language executables). `L
 ### Win32 / C++
 
 - Always use wide-string W-suffix APIs (`CreateWindowExW`, `ShellExecuteW`, …) and `L""` / `std::wstring`. `UNICODE`/`_UNICODE` are defined in `include/pch.h`.
-- Source files are UTF-8; MSVC is invoked with `/utf-8`. Resource `.rc` files are UTF-16 LE with `/l 0x804 /c 65001` for Chinese.
+- Source files are UTF-8; MSVC is invoked with `/utf-8`. Resource `.rc` files are also UTF-8 (no BOM); the Chinese resource DLL target is compiled with RC flags `/l 0x804 /c 65001` (Chinese language ID, UTF-8 codepage).
 - All UI dimensions go through `Utils::ScaleDPI()` (MulDiv by 96 dpi). Fonts via `Utils::CreateUIFont`/`CreateUIFontForDPI` ("Microsoft YaHei UI", 9pt, `GB2312_CHARSET`). Handle `WM_DPICHANGED` when laying out.
 - Free ListView item `lParam` data in `WM_DESTROY` to avoid leaks.
 

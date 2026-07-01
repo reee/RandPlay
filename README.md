@@ -1,152 +1,175 @@
 # RandPlay - Random File Player
 
-RandPlay is a Windows application that allows you to randomly open files of specific types from a selected directory.
+RandPlay is a Windows desktop application that randomly opens files from a user-selected directory using the system's default application. It indexes files matching video, image, or custom extensions and exposes a simple GUI: build an index, open a random file, view recent files.
+
+- Target: Windows 10+, CMake 3.16+, Visual Studio 2019+ (or Build Tools), Windows 10 SDK
+- Language: C++17 / Win32 API
+- Localization: English and Simplified Chinese, loaded at runtime from resource-only DLLs
 
 ## Features
 
-- Select a directory to scan for files
-- Choose from predefined file types (videos, images) or specify custom file extensions
+- Select a directory and scan it recursively for files
+- Choose from predefined file types (videos, images) or specify custom extensions
 - Build an index of matching files
 - Randomly open files using the system's default application
 - View the current file path and open its containing folder
+- Global hotkey support for opening a random file from anywhere
+- Live-switchable UI language (English / Simplified Chinese)
+
+## Build
+
+The canonical build is CMake. From the repo root:
+
+```
+cmake -B build -A x64
+cmake --build build --config Release
+```
+
+Use `--config Debug` for a debug build. Outputs land in `build/bin/{Debug,Release}/`.
+
+The build produces **three targets that must ship together** in the same directory:
+
+- `RandPlay.exe` — the GUI application
+- `RandPlay_en.dll` — English language resources
+- `RandPlay_zh_cn.dll` — Simplified Chinese language resources
+
+The EXE loads language resources from the DLLs at runtime; if a DLL is missing it falls back to English, then to resources embedded in the EXE.
+
+### Build scripts
+
+Convenience batch scripts live in `scripts/` (flat layout) and auto-locate CMake via `PATH` or `vswhere`:
+
+| Script | Description |
+|--------|-------------|
+| `scripts\build.bat` | Dev build. Optional args: `debug`, `run` (combinable, e.g. `build.bat debug run`) |
+| `scripts\build_release.bat` | Clean → Release build → zip distribution package under `dist\RandPlay_<version>\` |
+| `scripts\dev.bat` | Interactive dev menu (build / release / clean / run / open output dir) |
+| `scripts\functions.bat` | Shared helper library sourced by the other scripts |
+
+See [`scripts/README.md`](scripts/README.md) for full details.
 
 ## How to Use
 
-1. **Build the application**:
-     **Method 1: Using CMake (Recommended)**
-   - Run `build_cmake_auto.bat` to compile the application (auto-detects CMake)
-   - Or run `cmake_build.bat` to compile the application
-   - For debug build: `build_cmake_auto.bat debug` or `cmake_build.bat debug`
-   - For release build: `build_cmake_auto.bat release` or `cmake_build.bat release` (default)
-   - Quick build and run: `quick.bat`
-   - Requires CMake and either Visual Studio or MinGW
-   
-   **Method 2: Using traditional build**
-   - Run `build.bat` to compile the application
-   - Requires Visual Studio with C++ development tools installed
+1. Click **Browse...** to select a directory
+2. Choose a file type from the dropdown (Video Files, Image Files, or Custom Extension)
+3. If selecting **Custom Extension**, enter the desired extension (e.g. `.txt`)
+4. Click **Build Index** to scan the directory and create an index of matching files
+5. Click **Open Random File** (or press the configured global hotkey) to randomly open a file
+6. Right-click a recent file in the list to **Open File** or **Open Folder**
+7. Use **Settings** to switch language, configure the global hotkey, or change file extensions
 
-2. **Using the application**:
-   - Click "Browse..." to select a directory
-   - Choose a file type from the dropdown (Video Files, Image Files, or Custom Extension)
-   - If selecting "Custom Extension", enter the desired file extension (e.g., ".txt")
-   - Click "Build Index" to scan the directory and create an index of matching files
-   - Click "Open Random File" to randomly select and open a file from the index
-   - Use "Open Folder" to open the containing folder of the currently opened file
+## Data Files
 
-## Technical Details
+- `index.dat` — binary file index, located in the **executable's directory**
+- `settings.dat` — binary settings dump, located in the **current working directory**
 
-- Built with C++ and Win32 API
-- Supports recursive directory scanning
-- Stores the index in a file named `index.dat` in the application directory
-- Saves user settings in a file named `settings.dat` in the application directory
-- Uses the system's default application to open files
-
-## Requirements
-
-- Windows operating system
-- **For CMake build**: CMake (3.16+) and either Visual Studio (2017+) with C++ development tools or MinGW
-- **For traditional build**: Visual Studio (2017 or newer) with C++ development tools
+> Note: these two files live in different directories and diverge if the app is launched from a different working directory.
 
 ## Project Structure
 
-This project follows a modern modular architecture:
-
 ```
 RandPlay/
-├── src/                              # Source code modules
-│   ├── main.cpp                      # Main application entry
-│   ├── core/                         # Core business logic
-│   │   ├── Utils.cpp/h               # Utility functions
-│   │   ├── Settings.cpp/h            # Settings management
-│   │   └── FileIndexer.cpp/h         # File indexing
-│   ├── ui/                           # User interface
-│   │   └── UIHelpers.cpp/h           # UI helper functions
-│   └── constants/                    # Constants definitions
-│       ├── AppConstants.h            # Application constants
-│       └── ResourceIds.h             # Resource IDs
-├── resources/                        # Resource files
+├── src/                          # Source code
+│   ├── main.cpp                  # WinMain, WindowProc, message loop, global state
+│   ├── constants/                # AppConstants.h, ResourceIds.h
+│   ├── core/                     # Business logic (Utils, Settings, FileIndexer,
+│   │                             #   LanguageManager, HotkeyManager, ResourceDLL)
+│   └── ui/                       # UIHelpers
+├── resources/                    # .rc files, icons, string tables
+│   ├── RandPlay.rc               # EXE resources (English fallback embedded)
+│   ├── RandPlay_en.rc            # English resource DLL
+│   ├── RandPlay_zh_cn.rc         # Chinese resource DLL
 │   ├── icons/RandPlay.ico
-│   ├── strings/lang_en.rc
-│   └── RandPlay.rc
-├── include/pch.h                     # Precompiled header
-├── scripts/                          # Build and utility scripts
-│   ├── build/                        # Build scripts
-│   ├── dev/                          # Development tools
-│   └── dist/                         # Distribution scripts
-└── docs/                             # Documentation
+│   └── strings/                  # lang_en.rc, lang_zh_cn.rc (string tables)
+├── include/pch.h                 # Precompiled header
+├── scripts/                      # Build/dev batch scripts
+│   ├── build.bat
+│   ├── build_release.bat
+│   ├── dev.bat
+│   ├── functions.bat
+│   └── README.md
+├── CMakeLists.txt
+├── AGENTS.md                     # Guidance for coding agents
+└── CMAKE_CONFIG.md               # CMake/compiler options (partially stale)
 ```
+
+## Requirements
+
+- Windows 10 or later
+- CMake 3.16+ (or the version shipped with Visual Studio)
+- Visual Studio 2019+ or Visual Studio Build Tools, with the Windows 10 SDK
 
 ---
 
 # RandPlay - 随机文件播放器
 
-RandPlay 是一个 Windows 应用程序，允许您从选定目录中随机打开特定类型的文件。
+RandPlay 是一个 Windows 桌面应用程序，使用系统默认程序从用户选择的目录中随机打开文件。它索引匹配视频、图片或自定义扩展名的文件，并提供简单的图形界面：构建索引、随机打开文件、查看最近文件。
+
+- 目标平台：Windows 10+，CMake 3.16+，Visual Studio 2019+（或 Build Tools），Windows 10 SDK
+- 语言：C++17 / Win32 API
+- 本地化：英文与简体中文，运行时从资源 DLL 加载
 
 ## 功能特点
 
-- 选择要扫描文件的目录
-- 从预定义的文件类型（视频、图像）中选择或指定自定义文件扩展名
-- 建立匹配文件的索引
-- 使用系统默认应用程序随机打开文件
+- 选择目录并递归扫描文件
+- 从预定义文件类型（视频、图片）中选择，或指定自定义扩展名
+- 构建匹配文件的索引
+- 使用系统默认程序随机打开文件
 - 查看当前文件路径并打开其所在文件夹
+- 支持全局快捷键，可在任意位置触发随机打开
+- UI 语言可实时切换（英文 / 简体中文）
+
+## 构建
+
+标准构建方式为 CMake，在仓库根目录执行：
+
+```
+cmake -B build -A x64
+cmake --build build --config Release
+```
+
+使用 `--config Debug` 进行调试构建。产物输出到 `build/bin/{Debug,Release}/`。
+
+构建会产生**三个必须一同发布到同一目录的目标**：
+
+- `RandPlay.exe` — 图形界面应用程序
+- `RandPlay_en.dll` — 英文语言资源
+- `RandPlay_zh_cn.dll` — 简体中文语言资源
+
+EXE 在运行时从 DLL 加载语言资源；若 DLL 缺失，则依次回退到英文、EXE 内嵌资源。
+
+### 构建脚本
+
+便捷批处理脚本位于 `scripts/`（扁平结构），会通过 `PATH` 或 `vswhere` 自动定位 CMake：
+
+| 脚本 | 说明 |
+|------|------|
+| `scripts\build.bat` | 开发构建。可选参数：`debug`、`run`（可组合，如 `build.bat debug run`） |
+| `scripts\build_release.bat` | 清理 → Release 构建 → 在 `dist\RandPlay_<版本>\` 下打包 |
+| `scripts\dev.bat` | 交互式开发菜单（构建 / 发布 / 清理 / 运行 / 打开输出目录） |
+| `scripts\functions.bat` | 其他脚本共享的公共函数库 |
+
+详见 [`scripts/README.md`](scripts/README.md)。
 
 ## 使用方法
 
-1. **构建应用程序**：## Build Scripts
+1. 点击**浏览...**选择一个目录
+2. 从下拉菜单中选择文件类型（视频文件、图片文件或自定义扩展名）
+3. 若选择**自定义扩展名**，请输入所需扩展名（例如 `.txt`）
+4. 点击**构建索引**扫描目录并创建匹配文件索引
+5. 点击**打开随机文件**（或按下配置的全局快捷键）随机打开一个文件
+6. 在最近文件列表中右键单击，可选择**打开文件**或**打开文件夹**
+7. 通过**设置**切换语言、配置全局快捷键或更改文件扩展名
 
-Located in `scripts/` directory:
+## 数据文件
 
-### Build Scripts (`scripts/build/`)
-- `build_cmake_auto.bat` - Auto-detecting CMake build (recommended)
-- `cmake_build.bat` - CMake build with specific paths
-- `clean.bat` - Clean build files
-- `build.bat` - Traditional build script (legacy)
+- `index.dat` — 二进制文件索引，位于**可执行文件所在目录**
+- `settings.dat` — 二进制设置转储，位于**当前工作目录**
 
-### Development Tools (`scripts/dev/`)
-- `quick.bat` - Quick build and run
-- `run.bat` - Run the application
-- `info.bat` - Show project information
-- `open_vs.bat` - Open in Visual Studio
-
-### Distribution (`scripts/dist/`)
-- `install.bat` - Install application to desktop
-
-## Documentation
-
-- `CMAKE_CONFIG.md` - Detailed CMake configuration
-- `MIGRATION_SUMMARY.md` - CMake migration summary
-- `PROJECT_RESTRUCTURE_PLAN.md` - Restructuring plan
-- `docs/REFACTORING_COMPLETE.md` - Refactoring completion report
-   
-   **方法 2：使用传统构建**
-   - 运行 `build.bat` 编译应用程序
-   - 需要安装有 C++ 开发工具的 Visual Studio
-
-2. **使用应用程序**：
-   - 点击"浏览..."选择一个目录
-   - 从下拉菜单中选择文件类型（视频文件、图像文件或自定义扩展名）
-   - 如果选择"自定义扩展名"，请输入所需的文件扩展名（例如，".txt"）
-   - 点击"构建索引"扫描目录并创建匹配文件的索引
-   - 点击"打开随机文件"随机选择并打开索引中的文件
-   - 使用"打开文件夹"打开当前打开文件的所在文件夹
-
-## 技术细节
-
-- 使用 C++ 和 Win32 API 构建
-- 支持递归目录扫描
-- 在应用程序目录中将索引存储在名为 `index.dat` 的文件中
-- 在应用程序目录中将设置存储在名为 `settings.dat` 的文件中
-- 使用系统默认应用程序打开文件
+> 注意：这两个文件位于不同目录，若从其他工作目录启动应用，二者会不一致。
 
 ## 系统要求
 
-- Windows 操作系统
-- **CMake 构建**：CMake (3.16+) 和 Visual Studio（2017+）与 C++ 开发工具或 MinGW
-- **传统构建**：Visual Studio（2017 或更新版本）与 C++ 开发工具
-
-## 构建文件
-
-- `CMakeLists.txt` - CMake 配置文件
-- `cmake_build.bat` - CMake 构建脚本，支持调试/发布选项
-- `clean.bat` - 清理构建文件脚本
-- `build.bat` - 传统构建脚本（遗留）
+- Windows 10 或更高版本
+- CMake 3.16+（或随 Visual Studio 安装的版本）
+- Visual Studio 2019+ 或 Visual Studio Build Tools，含 Windows 10 SDK
