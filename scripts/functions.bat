@@ -1,9 +1,18 @@
 @echo off
 REM ================================================================
-REM RandPlay Build Script Library - Common Functions
+REM RandPlay Build Script Library - Shared Configuration
 REM ================================================================
-REM This file contains common functions and configuration
-REM Usage: call "%~dp0functions.bat"
+REM "Source" this from sibling scripts with:  call "%~dp0functions.bat"
+REM It sets project paths, ANSI color variables, and locates CMake
+REM (sets CMAKE_CMD, or leaves it empty if not found).
+REM
+REM NOTE: batch labels are NOT callable across files, so this file
+REM intentionally contains NO reusable labels. Each script defines
+REM its own :print_* helpers (see build.bat / dev.bat for the shared
+REM snippet). Delayed expansion is enabled here because several
+REM variables reference each other inside the guard block.
+
+setlocal EnableDelayedExpansion
 
 if not defined RANDPLAY_FUNCTIONS_LOADED (
     set "RANDPLAY_FUNCTIONS_LOADED=1"
@@ -15,113 +24,71 @@ if not defined RANDPLAY_FUNCTIONS_LOADED (
     set "PROJECT_VERSION=1.0.0"
     set "DEFAULT_CONFIG=Release"
 
-    REM Get project root directory (this file is in scripts/, go up one level)
+    REM Project root (this file lives in scripts/, go up one level)
     pushd "%~dp0.."
-    set "PROJECT_ROOT=%CD%"
+    set "PROJECT_ROOT=!CD!"
     popd
 
-    REM Directory paths
-    set "BUILD_DIR=%PROJECT_ROOT%\build"
-    set "BIN_DIR=%BUILD_DIR%\bin"
-    set "SRC_DIR=%PROJECT_ROOT%\src"
-    set "SCRIPTS_DIR=%PROJECT_ROOT%\scripts"
+    set "BUILD_DIR=!PROJECT_ROOT!\build"
+    set "BIN_DIR=!BUILD_DIR!\bin"
+    set "SRC_DIR=!PROJECT_ROOT!\src"
+    set "SCRIPTS_DIR=!PROJECT_ROOT!\scripts"
 
     REM ============================================================
-    REM Color Codes (Windows 10+)
+    REM ANSI Color Codes (build the ESC prefix at runtime)
     REM ============================================================
-    set "COLOR_RESET=[0m"
-    set "COLOR_RED=[91m"
-    set "COLOR_GREEN=[92m"
-    set "COLOR_YELLOW=[93m"
-    set "COLOR_BLUE=[94m"
-    set "COLOR_CYAN=[96m"
-    set "COLOR_WHITE=[97m"
-
-    REM Change to project root directory
-    cd /d "%PROJECT_ROOT%"
+    for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%b"
+    set "COLOR_RESET=!ESC![0m"
+    set "COLOR_RED=!ESC![91m"
+    set "COLOR_GREEN=!ESC![92m"
+    set "COLOR_YELLOW=!ESC![93m"
+    set "COLOR_BLUE=!ESC![94m"
+    set "COLOR_CYAN=!ESC![96m"
+    set "COLOR_WHITE=!ESC![97m"
 )
 
-REM Define functions outside the if block to avoid parsing issues
+REM Promote variables to the caller's environment (escape the local
+REM scope introduced above). RANDPLAY_FUNCTIONS_LOADED gates re-entry.
+endlocal & (
+    set "PROJECT_NAME=%PROJECT_NAME%"
+    set "PROJECT_VERSION=%PROJECT_VERSION%"
+    set "DEFAULT_CONFIG=%DEFAULT_CONFIG%"
+    set "PROJECT_ROOT=%PROJECT_ROOT%"
+    set "BUILD_DIR=%BUILD_DIR%"
+    set "BIN_DIR=%BIN_DIR%"
+    set "SRC_DIR=%SRC_DIR%"
+    set "SCRIPTS_DIR=%SCRIPTS_DIR%"
+    set "ESC=%ESC%"
+    set "COLOR_RESET=%COLOR_RESET%"
+    set "COLOR_RED=%COLOR_RED%"
+    set "COLOR_GREEN=%COLOR_GREEN%"
+    set "COLOR_YELLOW=%COLOR_YELLOW%"
+    set "COLOR_BLUE=%COLOR_BLUE%"
+    set "COLOR_CYAN=%COLOR_CYAN%"
+    set "COLOR_WHITE=%COLOR_WHITE%"
+    set "RANDPLAY_FUNCTIONS_LOADED=%RANDPLAY_FUNCTIONS_LOADED%"
+)
 
-:print_header
-    echo.
-    echo %COLOR_CYAN%=============================================================%COLOR_RESET%
-    echo %COLOR_CYAN%%PROJECT_NAME% - %~1%COLOR_RESET%
-    echo %COLOR_CYAN%=============================================================%COLOR_RESET%
-    echo.
-    goto :eof
+REM ================================================================
+REM Locate CMake -> CMAKE_CMD
+REM   1) On PATH
+REM   2) Bundled with the latest Visual Studio (via vswhere, which
+REM      ships with every VS 2017+ install at a fixed location)
+REM Leaves CMAKE_CMD empty if neither is available.
+REM ================================================================
+set "CMAKE_CMD="
+for /f "delims=" %%c in ('where cmake 2^>nul') do (
+    if not defined CMAKE_CMD set "CMAKE_CMD=%%c"
+)
+if defined CMAKE_CMD goto :eof
 
-:print_success
-    echo %COLOR_GREEN%[OK] %~1%COLOR_RESET%
-    goto :eof
-
-:print_error
-    echo %COLOR_RED%[ERROR] %~1%COLOR_RESET%
-    goto :eof
-
-:print_warning
-    echo %COLOR_YELLOW%[WARNING] %~1%COLOR_RESET%
-    goto :eof
-
-:print_info
-    echo %COLOR_BLUE%[INFO] %~1%COLOR_RESET%
-    goto :eof
-
-:print_step
-    echo %COLOR_WHITE%[%~1] %~2%COLOR_RESET%
-    goto :eof
-
-:check_command
-    where %1 >nul 2>&1
-    if %errorlevel% neq 0 (
-        call :print_error "%1 not found. Please ensure it is installed."
-        exit /b 1
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not exist "%VSWHERE%" set "VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist "%VSWHERE%" (
+    set "VS_INSTALL="
+    for /f "usebackq delims=" %%v in (`"%VSWHERE%" -latest -products * -property installationPath`) do set "VS_INSTALL=%%v"
+    if exist "%VS_INSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" (
+        set "CMAKE_CMD=%VS_INSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
     )
-    goto :eof
-
-:ensure_dir
-    if not exist "%~1" (
-        mkdir "%~1" 2>nul
-        if %errorlevel% neq 0 (
-            call :print_error "Cannot create directory: %~1"
-            exit /b 1
-        )
-    )
-    goto :eof
-
-:safe_rmdir
-    if exist "%~1" (
-        call :print_info "Removing directory: %~1"
-        rmdir /s /q "%~1" 2>nul
-        if exist "%~1" (
-            call :print_warning "Directory removal failed, retrying: %~1"
-            timeout /t 2 /nobreak >nul
-            rmdir /s /q "%~1" 2>nul
-        )
-    )
-    goto :eof
-
-:check_file
-    if not exist "%~1" (
-        call :print_error "File not found: %~1"
-        exit /b 1
-    )
-    goto :eof
-
-:format_size
-    set "size=%~1"
-    if %size% lss 1024 (
-        echo %size% B
-    ) else if %size% lss 1048576 (
-        set /a "kb=%size% / 1024"
-        echo !kb! KB
-    ) else (
-        set /a "mb=%size% / 1048576"
-        echo !mb! MB
-    )
-    goto :eof
-
-:get_timestamp
-    for /f "tokens=2 delims==" %%i in ('wmic OS Get localdatetime /value') do set "dt=%%i"
-    set "timestamp=%dt:~0,4%-%dt:~4,2%-%dt:~6,2% %dt:~8,2%:%dt:~10,2%:%dt:~12,2%"
-    goto :eof
+)
+goto :eof

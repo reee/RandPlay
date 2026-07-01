@@ -4,103 +4,131 @@ setlocal EnableDelayedExpansion
 REM ============================================================
 REM RandPlay Build Script
 REM ============================================================
+REM Builds RandPlay (one EXE + two resource DLLs) for x64.
+REM
+REM Usage:
+REM   scripts\build.bat              Release build
+REM   scripts\build.bat debug        Debug build
+REM   scripts\build.bat run          Build + launch RandPlay.exe
+REM   scripts\build.bat debug run    Combine flags
+REM ============================================================
 
-REM Enable ANSI color support for Windows 10+
-set "ESC="
-for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (
-    set "ESC=%%b"
-)
-set "ANSI_RESET=%ESC%[0m"
-set "ANSI_CYAN=%ESC%[96m"
-set "ANSI_GREEN=%ESC%[92m"
-set "ANSI_RED=%ESC%[91m"
-set "ANSI_WHITE=%ESC%[97m"
-set "ANSI_BLUE=%ESC%[94m"
+call "%~dp0functions.bat"
 
-REM Set project paths
-set "SCRIPT_DIR=%~dp0"
-set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
-pushd "%SCRIPT_DIR%\.."
-set "PROJECT_ROOT=%CD%"
-popd
+REM --- output helpers ---
+call :print_header "Build Script"
 
-set "BUILD_DIR=%PROJECT_ROOT%\build"
-set "BIN_DIR=%BUILD_DIR%\bin"
-
-REM Print header
-echo.
-echo %ANSI_CYAN%=============================================================%ANSI_RESET%
-echo %ANSI_CYAN%RandPlay - Build Script%ANSI_RESET%
-echo %ANSI_CYAN%=============================================================%ANSI_RESET%
-echo.
-
-REM Parse arguments
-set "BUILD_CONFIG=Release"
-set "BUILD_TARGET=all"
+REM --- parse arguments ---
+set "BUILD_CONFIG=%DEFAULT_CONFIG%"
 set "RUN_AFTER=false"
-
 :parse_args
 if "%~1"=="" goto :args_done
-if /i "%~1"=="debug" set "BUILD_CONFIG=Debug" & shift & goto :parse_args
-if /i "%~1"=="release" set "BUILD_CONFIG=Release" & shift & goto :parse_args
-if /i "%~1"=="en" set "BUILD_TARGET=RandPlay_EN" & shift & goto :parse_args
-if /i "%~1"=="zh" set "BUILD_TARGET=RandPlay_ZH_CN" & shift & goto :parse_args
-if /i "%~1"=="run" set "RUN_AFTER=true" & shift & goto :parse_args
+if /i "%~1"=="debug"   ( set "BUILD_CONFIG=Debug"   & shift & goto :parse_args )
+if /i "%~1"=="release" ( set "BUILD_CONFIG=Release" & shift & goto :parse_args )
+if /i "%~1"=="run"     ( set "RUN_AFTER=true"       & shift & goto :parse_args )
+call :print_warning "Unknown argument: %~1"
 shift & goto :parse_args
 :args_done
 
-REM Check if cmake is available
-where cmake >nul 2>&1
-if %errorlevel% neq 0 (
-    echo %ANSI_RED%[ERROR] cmake not found. Please ensure it is installed.%ANSI_RESET%
+REM --- locate CMake ---
+if not defined CMAKE_CMD (
+    call :print_error "cmake not found. Install CMake or Visual Studio 2019+ (Build Tools) and re-run."
+    call :print_info  "Download: https://cmake.org/download/"
+    exit /b 1
+)
+call :print_info "Using CMake: %CMAKE_CMD%"
+
+REM --- ensure output dirs ---
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%" 2>nul
+if not exist "%BIN_DIR%"  mkdir "%BIN_DIR%"  2>nul
+
+REM --- generate build files ---
+call :print_step 1 "Generating build files (x64)"
+"%CMAKE_CMD%" -B "%BUILD_DIR%" -A x64 -S "%PROJECT_ROOT%"
+if errorlevel 1 (
+    call :print_error "Failed to generate build files"
     exit /b 1
 )
 
-REM Ensure directories exist
-if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
-if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
-
-REM Generate build files
-echo %ANSI_WHITE%[1] Generating build files%ANSI_RESET%
-cmake -B "%BUILD_DIR%" -A x64
-if %errorlevel% neq 0 (
-    echo %ANSI_RED%[ERROR] Failed to generate build files%ANSI_RESET%
+REM --- build all targets (EXE + en/zh_cn resource DLLs) ---
+call :print_step 2 "Building project [%BUILD_CONFIG%]"
+"%CMAKE_CMD%" --build "%BUILD_DIR%" --config %BUILD_CONFIG%
+if errorlevel 1 (
+    call :print_error "Build failed"
     exit /b 1
 )
+call :print_success "Build completed"
 
-REM Build project
-echo %ANSI_WHITE%[2] Building project [%BUILD_CONFIG%] - %BUILD_TARGET%%ANSI_RESET%
-if "%BUILD_TARGET%"=="all" (
-    cmake --build "%BUILD_DIR%" --config %BUILD_CONFIG%
-) else (
-    cmake --build "%BUILD_DIR%" --config %BUILD_CONFIG% --target %BUILD_TARGET%
-)
-
-if %errorlevel% neq 0 (
-    echo %ANSI_RED%[ERROR] Build failed%ANSI_RESET%
-    exit /b 1
-)
-
-echo %ANSI_GREEN%[OK] Build completed%ANSI_RESET%
-
-REM Display output info
-if exist "%BIN_DIR%\%BUILD_CONFIG%\RandPlay_EN.exe" (
-    for %%f in ("%BIN_DIR%\%BUILD_CONFIG%\RandPlay_EN.exe") do (
-        echo %ANSI_BLUE%[INFO] RandPlay_EN.exe - %%~zf bytes%ANSI_RESET%
+REM --- report artifacts ---
+set "OUT_DIR=%BIN_DIR%\%BUILD_CONFIG%"
+for %%f in ("%OUT_DIR%\RandPlay.exe" "%OUT_DIR%\RandPlay_en.dll" "%OUT_DIR%\RandPlay_zh_cn.dll") do (
+    if exist "%%~f" (
+        call :format_size "%%~zf"
+        call :print_info "%%~nxf - !_HUMAN_SIZE!"
+    ) else (
+        call :print_warning "Expected output missing: %%~nxf"
     )
 )
 
-if exist "%BIN_DIR%\%BUILD_CONFIG%\RandPlay_ZH_CN.exe" (
-    for %%f in ("%BIN_DIR%\%BUILD_CONFIG%\RandPlay_ZH_CN.exe") do (
-        echo %ANSI_BLUE%[INFO] RandPlay_ZH_CN.exe - %%~zf bytes%ANSI_RESET%
-    )
-)
-
-REM Run application
+REM --- optionally launch ---
 if "%RUN_AFTER%"=="true" (
-    echo %ANSI_WHITE%[3] Running application%ANSI_RESET%
-    start "" "%BIN_DIR%\%BUILD_CONFIG%\RandPlay_EN.exe"
+    if exist "%OUT_DIR%\RandPlay.exe" (
+        call :print_step 3 "Running RandPlay.exe"
+        start "" "%OUT_DIR%\RandPlay.exe"
+    ) else (
+        call :print_error "RandPlay.exe not found, cannot run"
+        exit /b 1
+    )
 )
 
 echo.
-echo %ANSI_GREEN%[OK] Done%ANSI_RESET%
+call :print_success "Done"
+endlocal
+exit /b 0
+
+REM ================================================================
+REM Helpers (same-file labels)
+REM ================================================================
+:print_header
+    echo.
+    echo %COLOR_CYAN%=============================================================%COLOR_RESET%
+    echo %COLOR_CYAN%%PROJECT_NAME% - %~1%COLOR_RESET%
+    echo %COLOR_CYAN%=============================================================%COLOR_RESET%
+    echo.
+    goto :eof
+
+:print_success
+    echo %COLOR_GREEN%[OK] %~1%COLOR_RESET%
+    goto :eof
+
+:print_error
+    echo %COLOR_RED%[ERROR] %~1%COLOR_RESET%
+    goto :eof
+
+:print_warning
+    echo %COLOR_YELLOW%[WARNING] %~1%COLOR_RESET%
+    goto :eof
+
+:print_info
+    echo %COLOR_BLUE%[INFO] %~1%COLOR_RESET%
+    goto :eof
+
+:print_step
+    echo %COLOR_WHITE%[%~1] %~2%COLOR_RESET%
+    goto :eof
+
+REM format_size <bytes>  ->  sets _HUMAN_SIZE
+:format_size
+    set "_bytes=%~1"
+    set "_HUMAN_SIZE=%_bytes% B"
+    if %_bytes% geq 1048576 goto :fmt_mb
+    if %_bytes% geq 1024 goto :fmt_kb
+    goto :eof
+:fmt_mb
+    set /a "_mb=%_bytes% / 1048576"
+    set "_HUMAN_SIZE=!_mb! MB"
+    goto :eof
+:fmt_kb
+    set /a "_kb=%_bytes% / 1024"
+    set "_HUMAN_SIZE=!_kb! KB"
+    goto :eof
